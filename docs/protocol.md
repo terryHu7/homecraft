@@ -38,7 +38,7 @@ Data example:
 | `preview` | Optional. A preview image URL shown when entering the portal |
 | `homecraft` | `true` means the website supports this protocol; navigation carries the origin URL and character skin. `false` or absent means an ordinary link |
 
-`join` and `all` are the optional "Request Listing" and "View All" entry URLs. Navigation to `all` carries the origin URL and character skin, as for a `homecraft: true` website.
+`join` and `all` are the optional "Request listing" and "View all" entry URLs. Navigation to `all` carries the origin URL and character skin, as for a `homecraft: true` website.
 
 Reading requirements:
 

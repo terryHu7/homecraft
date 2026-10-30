@@ -164,6 +164,7 @@ Implementation examples: `world/build.js` (empty island with trees), `examples/t
 - When the user has not provided a link URL, do not set `href` on the `<a>`.
 - Work cards (`ul.store > li[data-work]`): `.listing` contains the icon, name, description, and button; `.shots` holds portrait screenshots — 400×869 WebP images are recommended.
 - Bilingual: short labels are written in English by default; Chinese uses `data-zh`, `data-zh-label`, `data-zh-placeholder`, `data-zh-alt`, etc.; Chinese body text with `data-en` attributes is also supported. Longer text is placed in separate elements with `lang="zh-CN"` and `lang="en"`. For single-language sites, set `languages` in `home.config.js`, e.g. `['zh']` or `['en']`.
+- Use the same Chinese and English names across the UI, README files, documentation, issue forms and screenshots: `传送门 / Portal`, `申请收录 / Request listing`, `查看全部 / View all`. Keep spelling and capitalization consistent; do not rename the listing request to "Add my home" or "Add my website". When changing a label, check synced copies and screenshots as well.
 - Site name, logo, and one-line tagline go in `homecraft.json` ([docs/site-metadata.md](docs/site-metadata.md)). `logo` is for site branding; the avatar skin is set by `config.skin`. When changing the site name, also update `<title>` and sharing metadata.
 - The Dock defaults to "Home page, About, Guestbook, Phone". Order is set by `dock` in `home.config.js`, maximum 9 items. The home page (`data-station="blog"`) embeds the user-provided website; when changing `data-embed`, also update the link in the body text.
 - Avatar follows [docs/avatar.md](docs/avatar.md): only replace the 64×64 PNG skin (`config.skin`); do not change the default model.
@@ -207,4 +208,4 @@ The portal connects independently deployed websites; see [docs/protocol.md](docs
 
 - Link formats follow `engine/door-protocol.js`, `engine/portal.js`, and `engine/traveller.js`. The public directory URL follows `engine/config.js`.
 - `Referrer-Policy` preserves the origin. Links contain only public URLs — no account IDs, email addresses, or other identity information.
-- The listing entry point is the main repository's ["Request Listing"](https://github.com/terryHu7/homecraft/issues/new/choose); see [docs/worlds.md](docs/worlds.md) for the process. `directory/` is only maintained in the main repository.
+- The listing entry point is the main repository's ["Request listing"](https://github.com/terryHu7/homecraft/issues/new/choose); see [docs/worlds.md](docs/worlds.md) for the process. `directory/` is only maintained in the main repository.
