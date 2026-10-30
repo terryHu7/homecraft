@@ -1,0 +1,17 @@
+{
+  "name": "rsliyu",
+  "url": "https://rsliyu.com",
+  "owner": "李煜",
+  "lang": [
+    "zh",
+    "en"
+  ],
+  "intro": {
+    "zh": "一间屋子，一方后院，一台永不关机的机器。门没锁，进来坐坐。",
+    "en": "A house, a backyard, a machine that never sleeps. The door's unlocked, come on in."
+  },
+  "logo": "https://rsliyu.com/assets/favicon.png",
+  "preview": "https://rsliyu.com/assets/og.jpg",
+  "homecraft": true,
+  "added": "2026-10-30"
+}
