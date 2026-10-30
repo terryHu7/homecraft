@@ -2,7 +2,7 @@
 
 The public directory lists website links for portals to display. Each website is independently deployed by its author.
 
-## Request Listing
+## Request listing
 
 Before applying, prepare the following:
 

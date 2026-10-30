@@ -14,40 +14,32 @@
 
 逛上一圈，像是去朋友家做客了一趟。比起传统的网站，这样的相识或许更让人印象深刻。
 
-一旦接受了这个设定，就再也回不去传统个人网站了…  
+一旦接受了这个设定，就再也回不去传统个人网站了…
 
- 
+## 实机截图 [🔗 Terry's Home](https://terryhu.cn)
 
-## 实机截图 [🔗 Terry’s Home](https://terryhu.cn)
+<p align="center"><img src="docs/images/cover.webp" width="420" alt="封面"></p>
 
-![封面](docs/images/cover.webp)
-
-| 篮球场                                   | 泳池                                 | 工作台                                 |
-| :-----------------------------------: | :--------------------------------: | :---------------------------------: |
-| ![篮球场](docs/images/terry-court.webp)  | ![泳池](docs/images/terry-pool.webp) | ![工作台](docs/images/terry-desk.webp) |
-| **作品展示**                              | **健身房**                            | **天气系统**                            |
-| ![作品展示](docs/images/terry-works.webp) | ![健身房](docs/images/terry-gym.webp) | ![下雪](docs/images/terry-snow.webp)  |
-
-
+| 篮球场 | 泳池 | 工作台 |
+| :---: | :---: | :---: |
+| <img src="docs/images/terry-court.webp" width="240" alt="篮球场"> | <img src="docs/images/terry-pool.webp" width="240" alt="泳池"> | <img src="docs/images/terry-desk.webp" width="240" alt="工作台"> |
+| **作品展示** | **健身房** | **天气系统** |
+| <img src="docs/images/terry-works.webp" width="240" alt="作品展示"> | <img src="docs/images/terry-gym.webp" width="240" alt="健身房"> | <img src="docs/images/terry-snow.webp" width="240" alt="下雪"> |
 
 ## 开始使用
 
-![初始模板](docs/images/starter.webp)
+<p align="center"><img src="docs/images/starter.webp" width="640" alt="初始模板"></p>
 
 项目已内置初始模板、相关提示词与约束，fork 之后即刻 vibe coding “我的世界”。
 
-在项目目录运行一行命令 `python3 tools/serve.py`，会随机选一个端口并自动打开浏览器。
+在项目目录运行一行命令 `python3 tools/serve.py`，会自动选择可用端口并打开浏览器。
 
-Terry's Home完整实现见 [examples/terry-home](examples/terry-home)。  
-
-
+Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 
 ## 传送门 [🔗 申请收录](https://github.com/terryHu7/homecraft/issues/new/choose)
 
-![传送门](docs/images/portal.webp)
+<p align="center"><img src="docs/images/portal.webp" width="640" alt="传送门"></p>
 
 类似传统博客的友链，传送门收录了大家的个人网站，方便互相“串门”。
- 
- 
 
 ## 友情链接 [🔗 LINUX DO](https://linux.do)
