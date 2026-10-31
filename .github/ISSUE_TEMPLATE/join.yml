@@ -7,8 +7,10 @@ body:
     attributes:
       value: |
         提交的资料会公开。审核通过后，网站将随下一次目录发布显示在传送门中。
+        传送门须能访问公共目录中的其他网站，请保留默认公共目录及跨站跳转功能。
 
         Submitted information is public. Approved websites appear in portals after the next directory publication.
+        Keep the default public directory and cross-site portal so visitors can reach other listed websites.
   - type: input
     id: url
     attributes:

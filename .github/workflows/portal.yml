@@ -1,0 +1,34 @@
+name: Portal compatibility
+on:
+  pull_request:
+    paths: ['engine/**', 'plugin/**', 'home.config.js', 'tools/**', 'package.json', '.github/workflows/**']
+  push:
+    branches: [main]
+    paths: ['engine/**', 'plugin/**', 'home.config.js', 'tools/**', 'package.json', '.github/workflows/**']
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --ignore-scripts --no-package-lock
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:listing
+      - name: The template's real portal still connects to the public directory
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/homecraft-preview.log 2>&1 &
+          for attempt in {1..20}; do curl -fsS http://127.0.0.1:4173/ > /dev/null && break; sleep 1; done
+          npm run check:listing -- --url http://127.0.0.1:4173/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portal-compatibility
+          path: tools/.check/listing/
+          retention-days: 7

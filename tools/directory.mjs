@@ -2,11 +2,11 @@
 // directory/_settings.json. Only the main repository publishes it (see
 // docs/worlds.md); forks never need this.
 //
-//   node tools/directory.mjs check [--online] [file …]   check every entry (and
+//   node tools/directory.mjs check [--online] [--portal] [file …]   check every entry (and
 //                                                        open the given ones, or all)
 //   node tools/directory.mjs build <out.json> [--online]  write the published list
 //
-// --online also opens each world, loads its logo and looks for its portal.
+// --online reads each world and logo; --portal also exercises the deployed UI.
 // `build --online` leaves out any world that cannot be reached, so a dead site
 // drops out of every door until it is back.
 // The published format is a contract with every Homecraft world ever made:
@@ -98,8 +98,8 @@ export async function logoProblem(value) {
   } catch { return `logo: ${value} cannot be loaded`; }
 }
 
-// Does the world have a portal? Its homecraft.json says "homecraft": true, or
-// its page carries the portal plugin. '' when it does.
+// Declaration only: useful for the weekly build, not proof of compatibility.
+// New listings must also pass the browser check (--online --portal).
 export async function portalProblem(value) {
   if ((await readSiteInfo(value, 15000))?.homecraft) return '';
   try {
@@ -149,17 +149,24 @@ async function main([command, ...args]) {
   // or portal is missing (a check fails; a build still lists it and says so).
   const down = new Set(), broken = new Map();
   if (online) {
-    const checks = await Promise.all(good.filter(e => !only.length || only.includes(e.file)).map(async e => {
-      const [up, ...found] = await Promise.all([reachable(e.data.url), logoProblem(e.data.logo), portalProblem(e.data.url)]);
-      return [e, up, found.filter(Boolean)];
-    }));
+    const runtime = command === 'check' && args.includes('--portal') ? await import('./inspect-portal.mjs') : null;
+    const browser = runtime ? await runtime.launchBrowser() : null;
+    let checks;
+    try {
+      checks = await Promise.all(good.filter(e => !only.length || only.includes(e.file)).map(async e => {
+        const [up, ...found] = await Promise.all([reachable(e.data.url), logoProblem(e.data.logo), portalProblem(e.data.url),
+          runtime ? runtime.inspectPortal(e.data.url, { browser }).then(runtime.portalMessage) : '',
+        ]);
+        return [e, up, found.filter(Boolean)];
+      }));
+    } finally { await browser?.close(); }
     for (const [e, up, found] of checks) {
       if (!up) { down.add(e.slug); console.error(`directory/${e.file}: ${e.data.url} cannot be reached`); }
       else if (found.length) { broken.set(e.slug, found); console.error(`directory/${e.file}: ${found.join('; ')}`); }
     }
   }
   if (command === 'check') {
-    console.log(`${good.length} worlds, ${bad.length} with problems${online ? `, ${down.size} unreachable, ${broken.size} with a broken logo or no portal` : ''}`);
+    console.log(`${good.length} worlds, ${bad.length} with problems${online ? `, ${down.size} unreachable, ${broken.size} needing logo or portal review` : ''}`);
     process.exit(bad.length || down.size || broken.size ? 1 : 0);
   }
   if (command === 'build' && args[0] && !args[0].startsWith('--')) {
@@ -181,7 +188,7 @@ async function main([command, ...args]) {
     }
     return;
   }
-  console.error('usage: node tools/directory.mjs check [--online] | build <out.json> [--online]');
+  console.error('usage: node tools/directory.mjs check [--online] [--portal] | build <out.json> [--online]');
   process.exit(2);
 }
 

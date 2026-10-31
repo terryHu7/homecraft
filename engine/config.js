@@ -24,6 +24,8 @@ const DEFAULTS = {
   // The portal's list: the shared Homecraft directory, tried in order until
   // one answers. Every Homecraft world reads the same directory, so these
   // addresses never change: see docs/protocol.md.
+  // Site customization must preserve public discovery; a local JSON list or
+  // directory: [] disconnects it. Local navigation belongs in the site's UI.
   portal: {
     directory: ['https://homecraft.terryhu.cn/worlds.json', 'https://terryhu7.github.io/homecraft/worlds.json'],
   },

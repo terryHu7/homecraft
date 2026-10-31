@@ -5,86 +5,93 @@
 name: Join
 on:
   issues:
-    types: [opened, edited, labeled]
+    types: [opened, edited, labeled, reopened]
+  issue_comment:
+    types: [created]
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+  contents: read
 concurrency:
-  group: join-${{ github.event.issue.number }}
+  # Ignored third-party/bot comments must not cancel an active inspection.
+  group: >-
+    join-${{ github.event.issue.number }}-${{
+    (github.event_name != 'issue_comment' ||
+    (github.event.comment.user.type != 'Bot' &&
+    (github.event.comment.user.login == github.event.issue.user.login ||
+    contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))))
+    && 'request' || github.run_id }}
   cancel-in-progress: true
 jobs:
-  propose:
-    if: vars.HOMECRAFT_DIRECTORY == 'true' && github.event.issue.state == 'open' && contains(github.event.issue.labels.*.name, 'join')
+  inspect:
+    if: >-
+      vars.HOMECRAFT_DIRECTORY == 'true' && !github.event.issue.pull_request && github.event.issue.state == 'open' &&
+      contains(github.event.issue.labels.*.name, 'join') &&
+      (github.event_name != 'issue_comment' ||
+      (github.event.comment.user.type != 'Bot' &&
+      (github.event.comment.user.login == github.event.issue.user.login ||
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))))
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      report: ${{ steps.inspect.outputs.report }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --ignore-scripts --no-package-lock
+      - run: npx playwright install --with-deps chromium
+      - name: Read metadata and exercise the public portal
+        id: inspect
+        run: node tools/check-listing.mjs --issue "$GITHUB_EVENT_PATH"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: listing-${{ github.event.issue.number }}
+          path: tools/.check/listing/
+          retention-days: 7
+  propose:
+    needs: inspect
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - uses: actions/github-script@v7
+        env:
+          REPORT: ${{ needs.inspect.outputs.report }}
         with:
           script: |
             const fs = require('node:fs');
-            const { readSiteInfo } = await import(`${process.env.GITHUB_WORKSPACE}/engine/door-metadata.js`);
-            const { problems, slugFor, reachable, logoProblem, portalProblem, keyOf } = await import(`${process.env.GITHUB_WORKSPACE}/tools/directory.mjs`);
+            const { problems, slugFor, keyOf } = await import(`${process.env.GITHUB_WORKSPACE}/tools/directory.mjs`);
             const { owner, repo } = context.repo, issue = context.payload.issue;
             const base = context.payload.repository.default_branch;
+            const current = (await github.rest.issues.get({ owner, repo, issue_number: issue.number })).data;
+            if (current.state !== 'open' || current.body !== issue.body || !current.labels.some(l => l.name === 'join')) return;
 
             // One reply on the issue, updated rather than repeated.
             const MARK = '<!-- homecraft-join -->';
             async function say(text) {
               const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: issue.number });
-              const mine = comments.find(c => c.user?.type === 'Bot' && c.body?.startsWith(MARK));
+              const mine = comments.find(c => c.user?.login === 'github-actions[bot]' && c.body?.startsWith(MARK));
               const body = `${MARK}\n${text}`;
               if (mine) await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
               else await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body });
             }
 
-            // The form's answers, by the first words of their headings (see
-            // .github/ISSUE_TEMPLATE/join.yml), so a label can drop "（可选）" or
-            // reword its English half without breaking this.
-            const answers = {};
-            for (const part of (issue.body || '').split(/^### /m).slice(1)) {
-              const [heading, ...rest] = part.split('\n');
-              const value = rest.join('\n').trim();
-              answers[heading.split(/（| \//)[0].trim()] = value === '_No response_' ? '' : value;
-            }
-            // Accept both current and earlier form labels.
-            const get = (label, legacy) => (answers[label] ?? answers[legacy] ?? '').trim();
-            const pair = (a, b) => (a && b && a !== b ? { zh: a, en: b } : a || b);
-            const languages = get('网站语言');
-            const entry = {
-              name: pair(get('网站名称', '名字'), get('英文名称', '英文名')),
-              url: get('网址').replace(/\s+/g, ''),
-              owner: get('作者名称', '主人'),
-              lang: languages.startsWith('中文和英文') ? ['zh', 'en'] : languages.startsWith('中文') ? 'zh' : 'en',
-            };
-            const intro = pair(get('简介', '一句话介绍'), get('英文简介', '英文介绍'));
-            if (intro) entry.intro = intro;
-            const logo = get('Logo').replace(/\s+/g, '');
-            if (logo) entry.logo = logo;
-            const preview = get('预览图').replace(/\s+/g, '');
-            if (preview) entry.preview = preview;
-            entry.homecraft = true;
-            entry.added = new Date().toISOString().slice(0, 10);
-
-            // A site that doesn't open comes first: nothing else can be checked.
-            const https = /^https:\/\//.test(entry.url);
-            let issues = https && !(await reachable(entry.url)) ? ['url: cannot be reached from GitHub'] : [];
-            if (!issues.length) {
-              // Blank answers come from the site's own homecraft.json (docs/site-metadata.md).
-              const info = https ? await readSiteInfo(entry.url, 15000) : null;
-              if (info) {
-                if (!entry.intro && info.intro) entry.intro = info.intro;
-                if (!entry.logo && info.logo && new URL(info.logo).origin === new URL(entry.url).origin) entry.logo = info.logo;
-              }
-              issues = problems(entry);
-            }
-            if (!issues.length) issues = [await logoProblem(entry.logo), await portalProblem(entry.url)].filter(Boolean);
-            if (issues.length) {
-              await say(['资料检查未通过，请编辑此 Issue 修改以下项目。 / Please edit this issue to address the following validation errors:', '', ...issues.map(i => `- ${i}`)].join('\n'));
-              core.setFailed(issues.join('; '));
+            const { entry, issues, review } = JSON.parse(process.env.REPORT);
+            const errors = [...new Set([...issues, ...problems(entry)])];
+            if (errors.length || review.length) {
+              await say(['自动检查结果 / Automated checks', '', ...errors.map(i => `- ${i}`), ...review.map(i => `- ${i}`), '',
+                '请处理提示后编辑此 Issue，或部署后在此回复以自动复查，无需重新申请。',
+                'Edit this issue or reply after redeploying to rerun checks; no new application is needed.'].join('\n'));
+              core.setFailed(errors.length ? 'Listing checks failed; see the issue reply.' : 'Maintainer review needed; see the issue reply.');
               return;
             }
 
@@ -111,7 +118,8 @@ jobs:
             const body = [
               `Closes #${issue.number}`, '',
               '```json', JSON.stringify(entry, null, 2), '```', '',
-              'Before merging, review the website and its portal on desktop and mobile.',
+              'Public-directory discovery, cross-site navigation, return and character transfer passed on desktop (Chinese) and mobile (English).',
+              'Before merging, review the website content. Automated portal checks do not assess content compliance.',
             ].join('\n');
             const open = (await github.rest.pulls.list({ owner, repo, head: `${owner}:${branch}`, state: 'open' })).data;
             const pr = open[0] ? (await github.rest.pulls.update({ owner, repo, pull_number: open[0].number, body })).data

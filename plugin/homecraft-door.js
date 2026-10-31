@@ -17,6 +17,7 @@ import { createTravelSession, navigateDoor, worldURL as http, worldKey as key, s
 import { readSiteInfo, siteText } from './door-metadata.js';
 import { createDoorControls, drawDoor } from './door-controls.js';
 import { DEFAULT_WORLDS } from './worlds-default.js';
+// Keep this shared directory and cross-site travel when customizing the UI.
 const DIRECTORY = ['https://homecraft.terryhu.cn/worlds.json', 'https://terryhu7.github.io/homecraft/worlds.json'];
 // A renderer can supply its owner's skin before importing this plugin.
 const host = document.querySelector('homecraft-door[skin]');

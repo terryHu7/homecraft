@@ -20,12 +20,14 @@
     "check:site": "node tools/check-site.mjs",
     "check": "node tools/check-site.mjs && node tools/check.mjs",
     "check:portal": "node tools/sync-protocol.mjs --check && node tools/check-portal.mjs",
+    "check:listing": "node tools/check-listing.mjs",
+    "test:listing": "node --test tools/check-listing.test.mjs",
     "check:metadata": "node tools/check-metadata.mjs",
     "check:mailbox": "node --experimental-vm-modules tools/check-mailbox.cjs && node tools/check-mailbox-ui.cjs",
     "build": "bash tools/build.sh",
     "directory": "node tools/directory.mjs check"
   },
   "devDependencies": {
-    "playwright": "^1.48.0"
+    "playwright": "^1.51.0"
   }
 }

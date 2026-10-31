@@ -206,6 +206,7 @@ The following are the default design requirements; user-specified styles take pr
 
 The portal connects independently deployed websites; see [docs/protocol.md](docs/protocol.md) for the protocol. When modifying the protocol, consider backward compatibility with older versions.
 
+- Preserve the default public directory, cross-site navigation and character transfer when customizing. Navigation within the site can coexist with the portal; it must not replace it. Before requesting listing, run `npm run check:listing -- --url <deployed URL>`; `homecraft: true` alone does not prove that the portal works.
 - Link formats follow `engine/door-protocol.js`, `engine/portal.js`, and `engine/traveller.js`. The public directory URL follows `engine/config.js`.
 - `Referrer-Policy` preserves the origin. Links contain only public URLs — no account IDs, email addresses, or other identity information.
 - The listing entry point is the main repository's ["Request listing"](https://github.com/terryHu7/homecraft/issues/new/choose); see [docs/worlds.md](docs/worlds.md) for the process. `directory/` is only maintained in the main repository.

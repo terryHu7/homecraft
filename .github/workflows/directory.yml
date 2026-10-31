@@ -10,10 +10,12 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Only directory files
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
@@ -27,9 +29,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm install --ignore-scripts --no-package-lock
+      - run: npx playwright install --with-deps chromium
       - name: Every entry is well formed; the changed ones open
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
         run: |
           node tools/directory.mjs check
-          git diff --name-only -z --diff-filter=AM "$BASE" HEAD -- 'directory/*.json' | xargs -0 -r node tools/directory.mjs check --online
+          git diff --name-only -z --diff-filter=AM "$BASE" HEAD -- 'directory/*.json' | xargs -0 -r node tools/directory.mjs check --online --portal
