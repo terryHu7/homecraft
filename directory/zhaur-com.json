@@ -1,0 +1,17 @@
+{
+  "name": {
+    "zh": "张金龙 · 湖畔工作室",
+    "en": "ZHAUR · Lakeside Studio"
+  },
+  "url": "https://zhaur.com/",
+  "owner": "张金龙",
+  "lang": "zh",
+  "intro": {
+    "zh": "从微山湖到上海，把真实业务里的想法做成可漫游的湖畔世界。进来看看 AI 作品、逛逛工作室，再传送到山顶看看远方。",
+    "en": "From Weishan Lake to Shanghai: a walkable lakeside studio for AI projects, stories, and ideas from real business."
+  },
+  "logo": "https://zhaur.com/studio-world/assets/favicon.svg",
+  "preview": "https://zhaur.com/studio-world/assets/zhaur-origin-mural.webp",
+  "homecraft": true,
+  "added": "2026-10-31"
+}
