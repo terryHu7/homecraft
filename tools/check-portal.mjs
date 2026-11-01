@@ -25,6 +25,7 @@ try {
   for (const { name, ...view } of views) {
     const context = await browser.newContext({ ...view, locale: 'zh-CN' });
     const page = await context.newPage(), errors = [];
+    await (await context.newCDPSession(page)).send('Network.setCacheDisabled', { cacheDisabled: true });
     page.on('pageerror', e => errors.push(e.message));
     const starter = { name: 'Starter', url: `${base}/`, homecraft: true };
     const neighbour = { name: 'Neighbour', owner: 'Alex', url: `${base}/visit/`, homecraft: true, intro: { zh: '隔壁', en: 'Next door' } };
@@ -40,8 +41,8 @@ try {
     await context.route('**/homecraft.json', route => route.fulfill({ status: 404 }));
     for (const url of DIRECTORY) await context.route(url, async route => {
       if (holdDirectory) await new Promise(resolve => { releaseDirectory = resolve; });
-      if (directoryDown) return route.fulfill({ status: 503, body: 'unavailable' });
-      await route.fulfill({ json: directory, headers: { 'access-control-allow-origin': '*' } });
+      if (directoryDown) return route.fulfill({ status: 503, body: 'unavailable', headers: { 'cache-control': 'no-store' } });
+      await route.fulfill({ json: directory, headers: { 'access-control-allow-origin': '*', 'cache-control': 'no-store' } });
     });
     // Pause just before leaving, so the departing page can be inspected.
     await context.route('**/engine/portal.js', async route => {
@@ -60,6 +61,8 @@ try {
       await page.waitForFunction(() => document.querySelector('.world-directory')?.dataset.loaded === 'true');
       await page.waitForFunction(() => document.querySelector('#panel').open && getComputedStyle(document.querySelector('#panel')).opacity === '1');
     };
+    // The directory is reused for a minute. A changed fixture is a new visit.
+    const fresh = async () => { await page.reload(); await ready(); await open(); };
     const close = async () => { await page.locator('#panel .close').click(); await page.waitForFunction(() => !document.querySelector('#panel').open); };
 
     await page.goto(`${base}/?lang=zh`); await ready();
@@ -136,35 +139,40 @@ try {
     assert.equal(await page.evaluate(() => __home.portal.busy), false);
 
     // Empty and unavailable lists keep the visitor here.
-    directory = { ...directory, worlds: [] }; await open();
+    directory = { ...directory, worlds: [] }; await fresh();
     assert.equal(await page.locator('.world-row').count(), 1);
     assert((await page.locator('.world-row').textContent()).includes("Terry's Home"));
     assert.equal(await page.locator('#loading').count(), 0); await close();
-    directoryDown = true; await open();
+    directoryDown = true; await fresh();
     assert((await page.locator('.world-row').textContent()).includes("Terry's Home"));
     assert.equal(await page.locator('.world-list-status.is-error').count(), 0); await close();
     directoryDown = false; directory = { ...directory, worlds: [starter, neighbour] };
     // The directory can hide a listed world.
-    directory = { ...directory, blocked: [`${base}/`] }; await open();
+    directory = { ...directory, blocked: [`${base}/`] }; await fresh();
     assert.equal(await page.locator(`.world-list button[data-world="${base}/"]`).count(), 0); await close();
     directory = { ...directory, blocked: [] };
 
-    // A late response cannot overwrite a different page after the list closes.
-    holdDirectory = true;
-    await page.evaluate(() => __home.openPortal());
-    await page.locator('.world-row').first().waitFor(); await close();
+    // A refresh still in flight when the list closes cannot replace the page.
+    // The startup fetch has already finished by the time the world is ready.
+    directoryDown = true; await fresh();
+    holdDirectory = true; releaseDirectory = null;
+    await page.locator('.world-refresh').click();
+    const held = Date.now();
+    while (!releaseDirectory && Date.now() - held < 5000) await new Promise(resolve => setTimeout(resolve, 10));
+    assert(releaseDirectory, 'The directory request was not held');
+    await close();
     await page.evaluate(() => __home.go('about'));
-    while (!releaseDirectory) await new Promise(resolve => setTimeout(resolve, 10));
     holdDirectory = false; releaseDirectory();
+    directoryDown = false;
     await page.waitForTimeout(100);
     assert.equal(await page.locator('#panel').getAttribute('data-station'), 'about');
-    assert.equal(await page.locator('.world-directory').count(), 0); await close();
+    assert.equal(await page.locator('.world-directory').count(), 0);
 
     // Long lists scroll inside the panel; untrusted labels stay plain text.
     directory = { ...directory, worlds: [neighbour, { name: '<img src=x onerror="alert(1)">', url: `${base}/safe-label/` },
       { name: 'Unsafe', url: 'javascript:alert(1)' },
       ...Array.from({ length: 20 }, (_, i) => ({ name: `World ${i + 1}`, url: `${base}/world-${i}/` }))] };
-    await open();
+    await fresh();
     assert.equal(await page.locator('.world-list button').count(), 22);
     assert.equal(await page.locator('.world-text img').count(), 0);
     assert(await page.locator('.world-screen').evaluate(el => el.scrollHeight > el.clientHeight));

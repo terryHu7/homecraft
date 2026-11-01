@@ -61,6 +61,12 @@ location / {
 - After deployment, verify actual access from both domestic and overseas locations.
 - Use WebP for new images, and add `loading="lazy"` to card images. First-load size should be measured by actual browser transfer.
 
+## Updating an Existing Website
+
+To pick up shared portal fixes in an existing fork, merge the upstream changes or replace the complete `engine/` directory with the current Homecraft copy, then redeploy. Keep your own `world/`, `home.config.js`, `homecraft.json`, `index.html` and `assets/`.
+
+Deployed websites serve their own JavaScript copies. Publishing the shared directory updates their listings, while engine improvements take effect after each website updates and redeploys its code. The portal protocol remains compatible with older websites.
+
 ## Post-Deployment Checklist
 
 - On both desktop and mobile, test movement, flight, cards, portals, and all enabled languages.

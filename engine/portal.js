@@ -14,6 +14,7 @@ import { traveller } from './traveller.js';
 import { worldURL, worldKey, navigateDoor, sourceLabel } from './door-protocol.js';
 import { createDoorControls } from './door-controls.js';
 import { DEFAULT_WORLDS } from './worlds-default.js';
+import { createDirectory } from './door-directory.js';
 
 let travelling = false, journey = 0, cameFrom = null, cameFromName = '';
 export const isTravelling = () => travelling;
@@ -127,18 +128,8 @@ export function createPortal({ stage, world, onOpen }) {
 }
 
 // ---------- The list ----------
-// The shared directory, from the first of config.portal.directory that
-// answers. All sources are asked at once; the first in the list wins when it
-// answers in time, so a slower mirror only stands in when the main copy is out.
-async function fetchFirst(urls, ms) {
-  const abort = new AbortController(), timer = setTimeout(() => abort.abort(), ms);
-  const answers = urls.map(url => fetch(url, { signal: abort.signal, credentials: 'omit' })
-    .then(res => (res.ok ? res.json() : null)).catch(() => null));
-  try {
-    for (const answer of answers) { const data = await answer; if (Array.isArray(data) || Array.isArray(data?.worlds)) return data; }
-    return null;
-  } finally { clearTimeout(timer); abort.abort(); }
-}
+const sources = (Array.isArray(config.portal.directory) ? config.portal.directory : []).filter(Boolean);
+const directory = createDirectory(sources);
 const worldUrl = worldURL, key = worldKey;
 const storageKey = name => `homecraft-${name}:${key(location.href)}`;
 export const isCurrentWorld = url => key(url) === key(location.href);
@@ -166,11 +157,13 @@ function entry(item) {
 // { worlds, join, all, missed }: missed means the directory was wanted but
 // did not answer; join and all are the directory's own pages.
 export function initialWorlds() {
-  return { worlds: config.portal.directory?.length ? DEFAULT_WORLDS.map(entry).filter(Boolean) : [], join: null, all: null, missed: false };
+  const shared = directory.peek();
+  return { ...directoryWorlds(shared, false), ready: !!shared || !sources.length };
 }
-export async function getWorlds() {
-  const sources = (Array.isArray(config.portal.directory) ? config.portal.directory : []).filter(Boolean);
-  const shared = sources.length ? await fetchFirst(sources, 3500) : null;
+export async function getWorlds(force = false) {
+  return directoryWorlds(await directory.read(force));
+}
+function directoryWorlds(shared, fallback = true) {
   const blocked = (Array.isArray(shared?.blocked) ? shared.blocked : []).map(key).filter(Boolean);
   const seen = new Set();
   const keep = list => listOf(list).slice(0, 256).map(entry).filter(w => {
@@ -179,9 +172,9 @@ export async function getWorlds() {
     seen.add(id); return true;
   });
   const worlds = keep(shared);
-  if (sources.length && !worlds.length) worlds.push(...keep(DEFAULT_WORLDS));
+  if (fallback && sources.length && !worlds.length) worlds.push(...keep(DEFAULT_WORLDS));
   const page = value => (typeof value === 'string' && /^https:\/\//.test(value) ? value : null);
-  return { worlds, join: page(shared?.join), all: page(shared?.all), missed: sources.length > 0 && !shared && !worlds.length };
+  return { worlds, join: page(shared?.join), all: page(shared?.all), missed: fallback && sources.length > 0 && !shared };
 }
 
 // ---------- Leaving ----------

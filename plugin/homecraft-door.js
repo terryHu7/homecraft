@@ -17,7 +17,9 @@ import { createTravelSession, navigateDoor, worldURL as http, worldKey as key, s
 import { readSiteInfo, siteText } from './door-metadata.js';
 import { createDoorControls, drawDoor } from './door-controls.js';
 import { DEFAULT_WORLDS } from './worlds-default.js';
+import { createDirectory } from './door-directory.js';
 const DIRECTORY = ['https://homecraft.terryhu.cn/worlds.json', 'https://terryhu7.github.io/homecraft/worlds.json'];
+const directory = createDirectory(DIRECTORY);
 // A renderer can supply its owner's skin before importing this plugin.
 const host = document.querySelector('homecraft-door[skin]');
 const site = readSiteInfo(location.href);
@@ -33,14 +35,7 @@ async function go(world) {
   if (href) navigateDoor(href);
 }
 
-async function fetchFirst(urls, ms) {
-  const abort = new AbortController(), timer = setTimeout(() => abort.abort(), ms);
-  const answers = urls.map(u => fetch(u, { signal: abort.signal, credentials: 'omit' }).then(r => (r.ok ? r.json() : null)).catch(() => null));
-  try { for (const a of answers) { const d = await a; if (Array.isArray(d) || Array.isArray(d?.worlds)) return d; } return null; }
-  finally { clearTimeout(timer); abort.abort(); }
-}
-async function worlds(zh) {
-  const dir = await fetchFirst(DIRECTORY, 3500);
+function worlds(zh, dir, ready = true) {
   const pick = v => (typeof v === 'string' ? v : v && typeof v === 'object' ? (zh ? v.zh ?? v.en : v.en ?? v.zh) : '');
   const words = (v, n) => String(pick(v) || '').replace(/\s+/g, ' ').trim().slice(0, n);
   const blocked = (Array.isArray(dir?.blocked) ? dir.blocked : []).map(key).filter(Boolean);
@@ -58,8 +53,8 @@ async function worlds(zh) {
   const page = v => (typeof v === 'string' && /^https:\/\//.test(v) ? v : null);
   const all = page(dir?.all);
   const more = keep(dir);
-  if (!more.length) more.push(...keep(DEFAULT_WORLDS));
-  return { more, all, missed: !dir && !more.length };
+  if (ready && !more.length) more.push(...keep(DEFAULT_WORLDS));
+  return { more, all, missed: ready && !dir, loading: !ready };
 }
 // The site's logo over its initial; a logo that fails to load leaves the initial.
 function face(holder, w) {
@@ -112,6 +107,7 @@ class HomecraftDoor extends HTMLElement {
   static get observedAttributes() { return ['lang']; }
   attributeChangedCallback() { if (this.isConnected) this.#render(); }
   connectedCallback() {
+    void directory.read();
     this.#observer = new MutationObserver(() => this.#render());
     this.#observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
     this.#render();
@@ -145,16 +141,19 @@ class HomecraftDoor extends HTMLElement {
   }
 
   async #load(body, say, zh) {
-    this.#paint(body, say, { more: DEFAULT_WORLDS.map(w => ({ ...w, name: siteText(w.name), intro: siteText(w.intro) })) });
+    const cached = directory.peek(), initial = worlds(zh, cached, !!cached);
+    this.#paint(body, say, initial);
     const revision = ++this.#revision;
-    const result = await worlds(zh);
+    const result = worlds(zh, await directory.read());
     if (revision !== this.#revision || !this.isConnected) return;
-    this.#paint(body, say, result);
+    if (JSON.stringify(result) !== JSON.stringify(initial)) this.#paint(body, say, result);
   }
 
-  #paint(body, say, { more, all, missed }) {
+  #paint(body, say, { more, all, missed, loading }) {
+    body.setAttribute('aria-busy', String(!!loading));
     body.replaceChildren();
     const status = text => body.append(Object.assign(document.createElement('p'), { className: 'status', textContent: text }));
+    if (loading) { status(say('正在获取列表…', 'Loading the list…')); return; }
     if (!more.length) {
       status(missed ? say('暂时无法获取世界列表，可以稍后重试。', 'Couldn’t load the worlds. Try again shortly.') : say('暂时还没有可访问的世界。', 'No worlds are available yet.'));
       return;
