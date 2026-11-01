@@ -4,10 +4,6 @@
 
 Homecraft is a Minecraft-style 3D personal website template. The project uses Three.js and native ES modules, and runs without a build step.
 
-## Repository Boundaries
-
-TerryHome holds the complete source for Terry's personal website. Homecraft is the public template project; examples/terry-home is a public example with sensitive and unnecessary personal information omitted. Review differences and public scope before syncing changes. Validate and commit the repositories separately; a merge does not establish deployment.
-
 ## Contribution Workflow
 
 - Keep one purpose per PR. Use `type(scope): description` for PR titles and final commits, with English descriptions and original website names. Listing data belongs in its own PR.
