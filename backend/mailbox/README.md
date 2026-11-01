@@ -10,4 +10,6 @@ To send messages from within the website, deploy a Worker:
 4. Run `npx wrangler secret put SALT` and `npx wrangler secret put TURNSTILE_SECRET_KEY`, then deploy the Worker.
 5. In `home.config.js` set `mailbox: { endpoint: 'https://mailbox.example.com/send', email: 'public@example.com', turnstileSitekey: 'your site key' }`. The site key is public; the secret key lives only in the Worker's secrets.
 
+The form requires a single-line subject (up to 80 characters), a message, and contact details. The visitor’s subject is used directly as the email subject. Update the form, shared engine, and Worker together when upgrading an older installation.
+
 After changing the Worker, run `npm run check:mailbox`. The check does not send real mail.

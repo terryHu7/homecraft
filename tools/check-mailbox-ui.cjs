@@ -50,7 +50,25 @@ const script = `
     await page.evaluate(() => window.__home.go('mailbox'));
     await page.waitForFunction(() => window.__mailboxTest?.widgets.size === 1);
     const form = page.locator('#panel form.mailbox');
+    const subject = form.locator('[name="subject"]');
     const note = form.locator('textarea'), contact = form.locator('[name="contact"]'), send = form.locator('button[type="submit"]');
+    assert(await subject.evaluate(el => el.required));
+    assert.equal(await subject.getAttribute('maxlength'), '80');
+    await note.fill('很喜欢这个网站');
+    await contact.fill('visitor@example.com');
+    await send.click();
+    assert.equal(requests.length, 0, 'Empty subject reached API');
+    await subject.fill('   ');
+    await send.click();
+    assert.match(await form.locator('.mailbox-status').innerText(), /单行主题/);
+    await page.locator('#panel').getByRole('button', { name: 'English', exact: true }).click();
+    assert.equal(await subject.getAttribute('placeholder'), 'Subject');
+    assert.equal(await subject.getAttribute('aria-label'), 'Subject (required)');
+    assert.match(await form.locator('.mailbox-status').innerText(), /single-line subject/);
+    await page.locator('#panel').getByRole('button', { name: '中文', exact: true }).click();
+    assert.equal(await subject.getAttribute('placeholder'), '主题');
+    await subject.fill(' 网站移动端操作反馈 ');
+    await contact.fill('');
     assert(await contact.evaluate(el => el.required));
     await note.fill('很喜欢这个网站');
     await send.click();
@@ -61,6 +79,7 @@ const script = `
     await page.locator('#panel').getByRole('button', { name: 'English', exact: true }).click();
     assert.equal(await contact.getAttribute('placeholder'), 'Email or other contact (required)');
     assert.equal(await note.inputValue(), '很喜欢这个网站', 'Language switch erased note');
+    assert.equal(await subject.inputValue(), ' 网站移动端操作反馈 ', 'Language switch erased subject');
     assert.match(await form.locator('.mailbox-status').innerText(), /Please leave a way/);
     await page.waitForFunction(() => [...window.__mailboxTest.widgets.values()][0]?.options.language === 'en');
     await page.locator('#panel').getByRole('button', { name: '中文', exact: true }).click();
@@ -74,6 +93,8 @@ const script = `
     await page.waitForFunction(() => window.__mailboxTest.resets === 1);
     assert.equal(requests[0]['cf-turnstile-response'], 'test-token');
     assert.equal(requests[0].contact, '微信：visitor');
+    assert.equal(requests[0].subject, '网站移动端操作反馈');
+    assert.equal(await subject.inputValue(), ' 网站移动端操作反馈 ', 'Rejected token erased subject');
     assert.equal(requests[0].lang, 'zh');
     assert.equal(await note.inputValue(), '很喜欢这个网站', 'Rejected token erased note');
     await send.click();
@@ -101,6 +122,7 @@ const script = `
       await mobile.route('https://challenges.cloudflare.com/turnstile/v0/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: script }));
       await mobile.route(endpoint, route => {
         if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST' } });
+        assert.equal(route.request().postDataJSON().subject, 'Mobile feedback');
         deliveries++;
         return route.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: '{"ok":true,"code":"sent"}' });
       });
@@ -112,6 +134,11 @@ const script = `
       const bounds = await plainForm.locator('.mailbox-verification').boundingBox();
       assert(bounds.x >= 0 && bounds.x + bounds.width <= width, `Verification overflow at ${width}px`);
       if (width === 320) assert.equal(await mobile.evaluate(() => [...window.__mailboxTest.widgets.values()][0].options.size), 'compact');
+      const subject = plainForm.locator('[name="subject"]');
+      assert.equal(await subject.getAttribute('placeholder'), language === 'en' ? 'Subject' : '主题');
+      const subjectBounds = await subject.boundingBox();
+      assert(subjectBounds.x >= 0 && subjectBounds.x + subjectBounds.width <= width, `Subject overflow at ${width}px`);
+      await subject.fill('Mobile feedback');
       await plainForm.locator('textarea').fill('Love the site');
       await plainForm.locator('[name="contact"]').fill('visitor@example.com');
       await mobile.evaluate(() => window.__mailboxTest.pass());
@@ -143,6 +170,6 @@ const script = `
     assert.equal(await empty.locator('.mailbox-status').innerText(), '');
     assert.equal(await empty.locator('.mailbox-verification').isVisible(), false);
     await empty.close();
-    console.log('PASS: Chinese/English forms and live language switch; localized challenge/errors; contact required; token expiry/retry; modal cleanup; 390/320px; no-JS fallback; no real email sent');
+    console.log('PASS: Chinese/English forms and live language switch; localized challenge/errors; subject/contact required; exact subject payload; token expiry/retry; modal cleanup; 390/320px; no-JS fallback; no real email sent');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
