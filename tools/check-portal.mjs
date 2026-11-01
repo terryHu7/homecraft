@@ -25,6 +25,7 @@ try {
   for (const { name, ...view } of views) {
     const context = await browser.newContext({ ...view, locale: 'zh-CN' });
     const page = await context.newPage(), errors = [];
+    await (await context.newCDPSession(page)).send('Network.setCacheDisabled', { cacheDisabled: true });
     page.on('pageerror', e => errors.push(e.message));
     const starter = { name: 'Starter', url: `${base}/`, homecraft: true };
     const neighbour = { name: 'Neighbour', owner: 'Alex', url: `${base}/visit/`, homecraft: true, intro: { zh: '隔壁', en: 'Next door' } };
@@ -40,8 +41,8 @@ try {
     await context.route('**/homecraft.json', route => route.fulfill({ status: 404 }));
     for (const url of DIRECTORY) await context.route(url, async route => {
       if (holdDirectory) await new Promise(resolve => { releaseDirectory = resolve; });
-      if (directoryDown) return route.fulfill({ status: 503, body: 'unavailable' });
-      await route.fulfill({ json: directory, headers: { 'access-control-allow-origin': '*' } });
+      if (directoryDown) return route.fulfill({ status: 503, body: 'unavailable', headers: { 'cache-control': 'no-store' } });
+      await route.fulfill({ json: directory, headers: { 'access-control-allow-origin': '*', 'cache-control': 'no-store' } });
     });
     // Pause just before leaving, so the departing page can be inspected.
     await context.route('**/engine/portal.js', async route => {
@@ -152,13 +153,15 @@ try {
     directory = { ...directory, blocked: [] };
 
     // A response still in flight when the list closes cannot replace the page.
-    holdDirectory = true;
+    holdDirectory = true; releaseDirectory = null;
     await page.reload(); await ready();
+    const held = Date.now();
+    while (!releaseDirectory && Date.now() - held < 5000) await new Promise(resolve => setTimeout(resolve, 10));
+    assert(releaseDirectory, 'The directory request was not held');
     await page.evaluate(() => __home.openPortal());
     await page.locator('.world-list-status').waitFor();
     await close();
     await page.evaluate(() => __home.go('about'));
-    while (!releaseDirectory) await new Promise(resolve => setTimeout(resolve, 10));
     holdDirectory = false; releaseDirectory();
     await page.waitForTimeout(100);
     assert.equal(await page.locator('#panel').getAttribute('data-station'), 'about');
