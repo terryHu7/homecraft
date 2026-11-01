@@ -1,0 +1,10 @@
+{
+  "name": { "zh": "黑科技", "en": "HEIKEJI" },
+  "url": "https://heikeji.com/",
+  "owner": "LX",
+  "lang": ["zh", "en"],
+  "intro": "个人小站，四合院小居",
+  "logo": "https://heikeji.com/assets/favicon.png",
+  "homecraft": true,
+  "added": "2026-11-01"
+}
