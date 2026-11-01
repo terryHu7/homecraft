@@ -8,7 +8,7 @@ Public site details live in `homecraft.json` beside the home page; its fields an
 
 ## 1. Public Directory
 
-Portals read `https://homecraft.terryhu.cn/worlds.json`, with `https://terryhu7.github.io/homecraft/worlds.json` as the fallback, trying each address in order. The directory is generated from `directory/` in the main repository. See the [public directory](worlds.md) for listing instructions.
+Portals read the same directory from `https://homecraft.terryhu.cn/worlds.json` and `https://terryhu7.github.io/homecraft/worlds.json`, using the first valid answer. A slow mirror does not delay a working one. The directory is generated from `directory/` in the main repository. See the [public directory](worlds.md) for listing instructions.
 
 Data example:
 
@@ -46,7 +46,8 @@ Reading requirements:
 - Show names and intros as plain text; never parse as HTML.
 - Display entries as listed in the directory; do not overwrite with the site's live details.
 - Hide addresses in `blocked` (and every path under them).
-- Bundle Terry's home page entry by default and display it when the portal opens. Retain it if the directory fails to load, is invalid, or has no valid entries. An already-loaded `blocked` list takes precedence.
+- Load the directory in the background while the site starts. Reuse it for one minute, sharing in-flight requests; keep raw bilingual data so language changes do not require a new request. A refresh failure retains the last successful directory and its `blocked` list. An older mirror snapshot must not replace a newer published directory.
+- Show the cached list immediately when opening the portal. On a first visit with a request still pending, show a loading message rather than an incomplete list. Bundle Terry's home page entry as a fallback when the directory fails to load, is invalid, or has no valid entries. An already-loaded `blocked` list takes precedence.
 
 ## 2. Leaving
 

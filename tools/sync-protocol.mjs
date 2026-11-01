@@ -10,6 +10,7 @@ const copies = [
   ['engine/door-protocol.js', 'plugin/door-protocol.js'],
   ['engine/door-controls.js', 'plugin/door-controls.js'],
   ['engine/door-metadata.js', 'plugin/door-metadata.js'],
+  ['engine/door-directory.js', 'plugin/door-directory.js'],
   ['engine/worlds-default.js', 'plugin/worlds-default.js'],
   ['engine/assets/terry-logo.png', 'plugin/assets/terry-logo.png'],
   ['engine/assets/terry-logo.png', 'examples/terry-home/assets/favicon.png'],
