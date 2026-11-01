@@ -2,16 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { prepareRequest, applyRequest, reviewPolicy, notifyPublication, fingerprint, allowedEvent, validTitle, listingState, MARK } from './listing-github.mjs';
 import { requestHash } from './check-listing.mjs';
-import { classify } from './pr-check.mjs';
+import { classify, resolveCheckBase } from './pr-check.mjs';
 import { sameDirectory, verifyPublication } from './verify-publication.mjs';
 
 const entry = {name:'Example',url:'https://example.com/',owner:'Alex',lang:'en',intro:'Hello',logo:'https://example.com/logo.png',homecraft:true,added:'2026-11-01'};
 function fixture({ hasPR = true, listed = false } = {}) {
   const calls = [], comments = [];
   const issue = {number:4,body:'original form',state:'open',labels:[{name:'join'}],user:{login:'alex'},html_url:'https://github.com/o/r/issues/4'};
-  let pr = hasPR ? {number:5,user:{login:'github-actions[bot]'},head:{sha:'old-head',ref:'join/4',repo:{full_name:'o/r'}},html_url:'https://github.com/o/r/pull/5',body:`<!-- homecraft-request 4 ${requestHash(issue.body)} -->`} : null;
+  let pr = hasPR ? {number:5,user:{login:'github-actions[bot]'},head:{sha:'old-head',ref:'join/4',repo:{full_name:'o/r'}},base:{sha:'base'},html_url:'https://github.com/o/r/pull/5',body:`<!-- homecraft-request 4 ${requestHash(issue.body)} -->`} : null;
   const response = data => Promise.resolve({data});
   const github = {paginate:async (method, args) => (await method(args)).data,rest:{
+    actions:{createWorkflowDispatch:async args=>calls.push(['dispatch',args])},
     issues:{get:async()=>({data:structuredClone(issue)}),listForRepo:()=>response([issue]),listComments:()=>response(comments),
       createComment:async args=>{calls.push(['comment',args.body]);comments.push({id:1,user:{login:'github-actions[bot]'},body:args.body});},
       updateComment:async args=>{calls.push(['comment',args.body]);comments.find(c=>c.id===args.comment_id).body=args.body;}},
@@ -39,6 +40,7 @@ test('invalid edits cannot leave the previously successful PR mergeable', async(
   const f=fixture();f.report.status='changes';f.report.issues=['invalid URL'];await applyRequest(f);
   assert(f.calls.some(([type,s])=>type==='status'&&s.state==='failure'));
   assert(!f.calls.some(([type])=>type==='updateRef'));
+  assert(!f.calls.some(([type])=>type==='dispatch'));
 });
 test('inspection failures produce review feedback and block an existing PR', async()=>{
   const f=fixture();f.report=null;assert.equal((await applyRequest(f)).status,'review');
@@ -62,15 +64,28 @@ test('one accepted request creates one data file and a standardized PR',async()=
   assert.equal(JSON.parse(tree.tree[0].content).url,entry.url);
   const pr=f.calls.find(([t])=>t==='createPR')[1];assert.equal(pr.title,'chore(directory): add Example');assert(pr.body.includes('Closes #4'));
   assert(f.calls.some(([t,s])=>t==='status'&&s.context==='Listing request'&&s.sha==='new-head'&&s.state==='success'));
+  assert.deepEqual(f.calls.find(([t])=>t==='dispatch')[1],{owner:'o',repo:'r',workflow_id:'checks.yml',ref:'join/4'});
+  assert.equal(f.calls.at(-1)[0],'dispatch');
 });
 test('rechecking updates the same PR and the same comment',async()=>{
   const f=fixture();await applyRequest(f);await applyRequest(f);
   assert.equal(f.calls.filter(([t])=>t==='createPR').length,0);assert.equal(f.comments.length,1);
   assert.equal(listingState(f.comments[0].body).pr,5);
+  assert.equal(f.calls.filter(([t])=>t==='dispatch').length,2);
 });
 test('unchanged requests do not generate empty PRs',async()=>{
   const f=fixture({hasPR:false,listed:true});assert.equal((await applyRequest(f)).status,'unchanged');
   assert(!f.calls.some(([t])=>t==='createPR'||t==='commit'));
+  assert(!f.calls.some(([t])=>t==='dispatch'));
+});
+test('dispatched checks resolve the PR base only for the exact bot commit',async()=>{
+  const f=fixture();Object.assign(f.context,{eventName:'workflow_dispatch',ref:'refs/heads/join/4',sha:'old-head'});
+  assert.equal(await resolveCheckBase(f),'base');
+  f.context.sha='outdated-head';await assert.rejects(resolveCheckBase(f),/No open listing PR/);
+  f.context.sha='old-head';f.getPR().head.repo.full_name='fork/r';await assert.rejects(resolveCheckBase(f),/No open listing PR/);
+  f.getPR().head.repo.full_name='o/r';f.getPR().user.login='other';await assert.rejects(resolveCheckBase(f),/No open listing PR/);
+  f.context.ref='refs/heads/main';assert.equal(await resolveCheckBase(f),'');
+  f.context.eventName='pull_request';f.context.payload.pull_request.base={sha:'event-base'};assert.equal(await resolveCheckBase(f),'event-base');
 });
 test('PR body edits cannot turn pending inspection into success',async()=>{
   const f=fixture();await reviewPolicy(f);

@@ -1,6 +1,17 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
+export async function resolveCheckBase({ github, context }) {
+  if (context.eventName === 'pull_request') return context.payload.pull_request.base.sha;
+  if (context.eventName !== 'workflow_dispatch' || !context.ref.startsWith('refs/heads/join/')) return '';
+  const head = context.ref.slice('refs/heads/'.length);
+  const { data: prs } = await github.rest.pulls.list({ ...context.repo, head: `${context.repo.owner}:${head}`, state: 'open' });
+  const pr = prs.find(pr => /^join\/\d+$/.test(head) && pr.head.ref === head && pr.head.sha === context.sha &&
+    pr.user.login === 'github-actions[bot]' && pr.head.repo?.full_name === `${context.repo.owner}/${context.repo.repo}`);
+  if (!pr) throw Error('No open listing PR matches this workflow commit.');
+  return pr.base.sha;
+}
+
 export function classify(paths) {
   const entries = paths.filter(p => /^directory\/(?!_)[^/]+\.json$/.test(p));
   if (entries.length && (entries.length !== 1 || paths.length !== 1)) throw Error('A listing PR must change one directory JSON file. Submit other changes separately.');
