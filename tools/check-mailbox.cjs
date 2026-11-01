@@ -42,8 +42,14 @@ async function fixture(options = {}) {
 }
 
 (async () => {
-  const valid = { message: '很喜欢你做的作品', contact: '微信：visitor', 'cf-turnstile-response': 'visitor-token' };
+  const valid = { subject: '网站移动端操作反馈', message: '很喜欢你做的作品', contact: '微信：visitor', 'cf-turnstile-response': 'visitor-token' };
   const cases = [
+    ['missing subject', { ...valid, subject: undefined }, {}, 400, 'subject'],
+    ['blank subject', { ...valid, subject: '   ' }, {}, 400, 'subject'],
+    ['invalid subject type', { ...valid, subject: {} }, {}, 400, 'subject'],
+    ['long subject', { ...valid, subject: '题'.repeat(81) }, {}, 400, 'subject'],
+    ...['\r\nBcc: other@example.com', '\n', '\t', '\0', '\u007f', '\u2028', '\u2029'].map(control =>
+      ['subject control characters', { ...valid, subject: `Hello${control}world` }, {}, 400, 'subject']),
     ['missing contact', { ...valid, contact: undefined }, {}, 400, 'contact'],
     ['blank contact', { ...valid, contact: ' \n ' }, {}, 400, 'contact'],
     ['invalid contact type', { ...valid, contact: {} }, {}, 400, 'contact'],
@@ -81,15 +87,37 @@ async function fixture(options = {}) {
     const payload = calls.mail[0].raw.split('\r\n\r\n')[1];
     assert.equal(Buffer.from(payload, 'base64').toString(), `${valid.message}\n\n${valid.contact}`);
   }
+  // Decode the actual MIME header, including folded Chinese/emoji subjects.
+  for (const subject of [valid.subject, '项目合作咨询 — collaboration', 'A'.repeat(80), '题'.repeat(80), '🏠'.repeat(40), '合作 & feedback?']) {
+    const delivery = await fixture();
+    assert.equal((await delivery.send({ ...valid, subject: `  ${subject}  ` })).response.status, 200);
+    const raw = delivery.calls.mail[0].raw;
+    const header = raw.match(/^Subject: (.*(?:\r\n[ \t].*)*)/m)?.[1];
+    assert(header, 'Missing email subject');
+    const words = [...header.matchAll(/=\?UTF-8\?B\?([^?]+)\?=/g)];
+    assert(words.every(word => word[0].length <= 75), 'Oversize MIME encoded word');
+    assert.equal(words.map(word => Buffer.from(word[1], 'base64').toString()).join(''), subject, 'Subject changed or was truncated');
+    assert.equal(raw.match(/^Subject:/gm).length, 1);
+  }
   const email = await fixture();
   await email.send({ ...valid, contact: ' visitor@example.com ' });
   assert(email.calls.mail[0].raw.includes('Reply-To: <visitor@example.com>'));
   const form = await fixture();
-  assert.equal((await form.send({ message: 'test', contact: 'test@example.com' }, true)).response.status, 403);
+  assert.equal((await form.send({ subject: valid.subject, message: 'test', contact: 'test@example.com' }, true)).response.status, 403);
   assert.equal(form.calls.mail.length, 0, 'Plain form bypassed verification');
   assert.equal((await form.send({ ...valid, contact: ' ' }, true)).response.status, 400);
   assert.equal((await form.send(valid, true)).response.status, 200);
   assert.equal(form.calls.mail.length, 1);
+  for (const subject of ['', 'test\r\nBcc: other@example.com', '题'.repeat(81)]) {
+    const rejected = await fixture();
+    for (const lang of ['zh', 'en']) {
+      const { response, result } = await rejected.send({ ...valid, subject, lang }, true);
+      assert.equal(response.status, 400);
+      assert(result.includes(lang === 'en' ? 'single-line subject' : '单行主题'));
+    }
+    assert.equal(rejected.calls.mail.length, 0, 'Invalid form subject sent mail');
+    assert.equal(rejected.calls.verify, 0, 'Invalid subject consumed verification');
+  }
   for (const [browserLanguage, selectedLanguage, expectedLanguage, words] of [
     ['en-US,en;q=0.9', undefined, 'en', 'Please leave a way to reach you.'],
     ['zh-CN,zh;q=0.9', undefined, 'zh-CN', '请填写联系方式。'],
@@ -97,7 +125,7 @@ async function fixture(options = {}) {
     ['en-US', 'zh', 'zh-CN', '请填写联系方式。'],
   ]) {
     const localized = await fixture();
-    const { response, result } = await localized.send({ message: 'test', contact: '', ...(selectedLanguage ? { lang: selectedLanguage } : {}) }, true, { 'Accept-Language': browserLanguage });
+    const { response, result } = await localized.send({ subject: valid.subject, message: 'test', contact: '', ...(selectedLanguage ? { lang: selectedLanguage } : {}) }, true, { 'Accept-Language': browserLanguage });
     assert.equal(response.status, 400);
     assert.equal(response.headers.get('Content-Language'), expectedLanguage);
     assert(result.includes(`<html lang="${expectedLanguage}">`));
