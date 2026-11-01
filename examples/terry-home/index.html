@@ -80,6 +80,7 @@
   <article class="page" id="mailbox" data-station="mailbox">
     <h2 data-en="Mailbox">留言</h2>
     <form class="mailbox" action="mailto:you@example.com" method="post" enctype="text/plain">
+      <input name="subject" maxlength="80" required placeholder="主题" aria-label="主题，必填" data-en-placeholder="Subject" data-en-label="Subject (required)">
       <textarea name="message" rows="6" maxlength="1000" required placeholder="输入文字" aria-label="输入文字" data-en-placeholder="Write something" data-en-label="Write something"></textarea>
       <input name="contact" maxlength="120" required autocomplete="email" placeholder="联系方式（必填，邮箱或微信等）" aria-label="联系方式，必填" data-en-placeholder="Email or other contact (required)" data-en-label="How to reach you (required)">
       <input class="trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">

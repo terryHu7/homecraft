@@ -2,13 +2,14 @@
 // Routing, and retain only daily quota counters. Keys stay in Worker secrets.
 import { EmailMessage } from 'cloudflare:email';
 
-const MAX_NOTE = 1000, MAX_CONTACT = 120, PER_SENDER = 5, PER_DAY = 100;
+const MAX_SUBJECT = 80, MAX_NOTE = 1000, MAX_CONTACT = 120, PER_SENDER = 5, PER_DAY = 100;
 
 // What the plain page (no JavaScript) shows after its form posts here.
 const WORDS = {
   sent: ['已发送。', 'Sent.'],
   limit: ['今天发送次数太多，明天再试。', 'Too many notes today. Try again tomorrow.'],
   bad: ['发送失败：内容为空或太长。', 'Could not send: your note is empty or a field is too long.'],
+  subject: ['请填写单行主题，最多 80 字。', 'Please enter a single-line subject (up to 80 characters).'],
   contact: ['请填写联系方式。', 'Please leave a way to reach you.'],
   verify: ['请完成真人验证后再发送。验证过期时请重新验证。', 'Please complete verification before sending. If it has expired, verify again.'],
   unavailable: ['验证暂不可用，请稍后重试。', 'Verification is unavailable. Try again later.'],
@@ -40,8 +41,10 @@ export default {
     if (data.lang === 'zh' || data.lang === 'en') language = data.lang;
     // Bots fill in the hidden field; they are told it went.
     if (String(data.website ?? '')) return answer(200, 'sent');
+    const subject = typeof data.subject === 'string' ? data.subject.trim() : '';
     const note = typeof data.message === 'string' ? data.message.trim() : '';
     const contact = typeof data.contact === 'string' ? data.contact.trim() : '';
+    if (!subject || subject.length > MAX_SUBJECT || /[\u0000-\u001f\u007f\u2028\u2029]/u.test(data.subject)) return answer(400, 'subject');
     if (!contact) return answer(400, 'contact');
     if (!note || note.length > MAX_NOTE || contact.length > MAX_CONTACT) return answer(400, 'bad');
 
@@ -57,7 +60,7 @@ export default {
     if (mine >= PER_SENDER || all >= PER_DAY) return answer(429, 'limit');
 
     try {
-      await env.MAIL.send(new EmailMessage(env.FROM, env.TO, letter(env, note, contact)));
+      await env.MAIL.send(new EmailMessage(env.FROM, env.TO, letter(env, subject, note, contact)));
     } catch (error) {
       console.error('send failed', error);
       return answer(502, 'fail');
@@ -93,19 +96,31 @@ const b64 = text => {
   for (const byte of new TextEncoder().encode(text)) binary += String.fromCharCode(byte);
   return btoa(binary);
 };
-const encoded = text => `=?UTF-8?B?${b64(text)}?=`;
+// Fold headers into encoded words of at most 75 characters (RFC 2047),
+// without splitting a Unicode code point or truncating the visitor's subject.
+const encoded = text => {
+  const words = [];
+  let chunk = '', size = 0;
+  for (const char of text) {
+    const bytes = new TextEncoder().encode(char).length;
+    if (size + bytes > 45) { words.push(`=?UTF-8?B?${b64(chunk)}?=`); chunk = ''; size = 0; }
+    chunk += char; size += bytes;
+  }
+  if (chunk) words.push(`=?UTF-8?B?${b64(chunk)}?=`);
+  return words.join('\r\n ');
+};
 
 // A plain-text email: the note, then the contact on its own line if one was
 // left. The contact goes in Reply-To when it is an address, so answering the
 // email answers the visitor.
-function letter(env, note, contact) {
+function letter(env, subject, note, contact) {
   const body = contact ? `${note}\n\n${contact}` : note;
   const address = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(contact);
   return [
     `From: ${encoded(env.NAME || "Mailbox")} <${env.FROM}>`,
     `To: <${env.TO}>`,
     ...(address ? [`Reply-To: <${contact}>`] : []),
-    `Subject: ${encoded(note.replace(/\s+/g, ' ').slice(0, 24))}`,
+    `Subject: ${encoded(subject)}`,
     `Date: ${new Date().toUTCString()}`,
     `Message-ID: <${crypto.randomUUID()}@${String(env.FROM).split('@')[1]}>`,
     'MIME-Version: 1.0',
