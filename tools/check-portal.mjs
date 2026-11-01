@@ -14,7 +14,7 @@ if (!base) { console.log('Nothing is being served. Run python3 tools/serve.py fi
 const out = new URL('./.check/portal/', import.meta.url);
 mkdirSync(out, { recursive: true });
 const args = process.platform === 'darwin' ? ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'];
-const browser = await chromium.launch({ channel: 'chrome', args });
+const browser = await chromium.launch({ ...(process.platform === 'darwin' ? { channel: 'chrome' } : {}), args });
 const views = [
   { name: 'computer', viewport: { width: 1280, height: 800 } },
   { name: 'phone', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
