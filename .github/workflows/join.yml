@@ -1,119 +1,94 @@
-# Turns a "Request listing" issue into a pull request that adds one file to
-# directory/. Runs only in the main repository (repository variable
-# HOMECRAFT_DIRECTORY = true); nothing reaches the directory until the
-# maintainer merges it. Issue text is only ever handled as data.
 name: Join
 on:
   issues:
-    types: [opened, edited, labeled]
+    types: [opened, edited, labeled, unlabeled, reopened, closed]
+  issue_comment:
+    types: [created]
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+  contents: read
 concurrency:
-  group: join-${{ github.event.issue.number }}
+  group: >-
+    join-${{ github.event.issue.number }}-${{
+    (github.event_name != 'issue_comment' || (github.event.sender.type != 'Bot' &&
+    (github.event.comment.user.login == github.event.issue.user.login ||
+    contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))))
+    && 'request' || github.run_id }}
   cancel-in-progress: true
 jobs:
-  propose:
-    if: vars.HOMECRAFT_DIRECTORY == 'true' && github.event.issue.state == 'open' && contains(github.event.issue.labels.*.name, 'join')
+  prepare:
+    if: >-
+      vars.HOMECRAFT_DIRECTORY == 'true' && !github.event.issue.pull_request &&
+      (contains(github.event.issue.labels.*.name, 'join') || github.event.label.name == 'join') &&
+      (github.event_name != 'issue_comment' || (github.event.sender.type != 'Bot' &&
+      (github.event.comment.user.login == github.event.issue.user.login ||
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))))
     runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      statuses: write
+    outputs:
+      event: ${{ steps.prepare.outputs.event }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
         with:
-          node-version: 20
-      - uses: actions/github-script@v7
+          persist-credentials: false
+      - uses: actions/github-script@v9
+        id: prepare
         with:
           script: |
-            const fs = require('node:fs');
-            const { readSiteInfo } = await import(`${process.env.GITHUB_WORKSPACE}/engine/door-metadata.js`);
-            const { problems, slugFor, reachable, logoProblem, portalProblem, keyOf } = await import(`${process.env.GITHUB_WORKSPACE}/tools/directory.mjs`);
-            const { owner, repo } = context.repo, issue = context.payload.issue;
-            const base = context.payload.repository.default_branch;
-
-            // One reply on the issue, updated rather than repeated.
-            const MARK = '<!-- homecraft-join -->';
-            async function say(text) {
-              const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: issue.number });
-              const mine = comments.find(c => c.user?.type === 'Bot' && c.body?.startsWith(MARK));
-              const body = `${MARK}\n${text}`;
-              if (mine) await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
-              else await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body });
-            }
-
-            // The form's answers, by the first words of their headings (see
-            // .github/ISSUE_TEMPLATE/join.yml), so a label can drop "（可选）" or
-            // reword its English half without breaking this.
-            const answers = {};
-            for (const part of (issue.body || '').split(/^### /m).slice(1)) {
-              const [heading, ...rest] = part.split('\n');
-              const value = rest.join('\n').trim();
-              answers[heading.split(/（| \//)[0].trim()] = value === '_No response_' ? '' : value;
-            }
-            // Accept both current and earlier form labels.
-            const get = (label, legacy) => (answers[label] ?? answers[legacy] ?? '').trim();
-            const pair = (a, b) => (a && b && a !== b ? { zh: a, en: b } : a || b);
-            const languages = get('网站语言');
-            const entry = {
-              name: pair(get('网站名称', '名字'), get('英文名称', '英文名')),
-              url: get('网址').replace(/\s+/g, ''),
-              owner: get('作者名称', '主人'),
-              lang: languages.startsWith('中文和英文') ? ['zh', 'en'] : languages.startsWith('中文') ? 'zh' : 'en',
-            };
-            const intro = pair(get('简介', '一句话介绍'), get('英文简介', '英文介绍'));
-            if (intro) entry.intro = intro;
-            const logo = get('Logo').replace(/\s+/g, '');
-            if (logo) entry.logo = logo;
-            const preview = get('预览图').replace(/\s+/g, '');
-            if (preview) entry.preview = preview;
-            entry.homecraft = true;
-            entry.added = new Date().toISOString().slice(0, 10);
-
-            // A site that doesn't open comes first: nothing else can be checked.
-            const https = /^https:\/\//.test(entry.url);
-            let issues = https && !(await reachable(entry.url)) ? ['url: cannot be reached from GitHub'] : [];
-            if (!issues.length) {
-              // Blank answers come from the site's own homecraft.json (docs/site-metadata.md).
-              const info = https ? await readSiteInfo(entry.url, 15000) : null;
-              if (info) {
-                if (!entry.intro && info.intro) entry.intro = info.intro;
-                if (!entry.logo && info.logo && new URL(info.logo).origin === new URL(entry.url).origin) entry.logo = info.logo;
-              }
-              issues = problems(entry);
-            }
-            if (!issues.length) issues = [await logoProblem(entry.logo), await portalProblem(entry.url)].filter(Boolean);
-            if (issues.length) {
-              await say(['资料检查未通过，请编辑此 Issue 修改以下项目。 / Please edit this issue to address the following validation errors:', '', ...issues.map(i => `- ${i}`)].join('\n'));
-              core.setFailed(issues.join('; '));
-              return;
-            }
-
-            // The same world again updates its file; another world gets a new one.
-            const dir = `${process.env.GITHUB_WORKSPACE}/directory/`;
-            const files = fs.readdirSync(dir).filter(f => f.endsWith('.json') && !f.startsWith('_'));
-            const same = files.find(f => { try { return keyOf(JSON.parse(fs.readFileSync(dir + f, 'utf8')).url) === keyOf(entry.url); } catch { return false; } });
-            if (same) entry.added = JSON.parse(fs.readFileSync(dir + same, 'utf8')).added || entry.added;
-            let slug = same ? same.slice(0, -5) : slugFor(entry.url);
-            for (let n = 2; !same && files.includes(`${slug}.json`); n++) slug = `${slugFor(entry.url).slice(0, 36)}-${n}`;
-
-            const branch = `join/${issue.number}`, path = `directory/${slug}.json`;
-            const head = (await github.rest.repos.getBranch({ owner, repo, branch: base })).data.commit.sha;
-            try { await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha: head }); }
-            catch { await github.rest.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: head, force: true }); }
-            let sha;
-            try { sha = (await github.rest.repos.getContent({ owner, repo, path, ref: branch })).data.sha; } catch {}
-            await github.rest.repos.createOrUpdateFileContents({
-              owner, repo, path, branch, sha,
-              message: `${same ? 'Update' : 'Add'} ${slug} in the directory (#${issue.number})`,
-              content: Buffer.from(JSON.stringify(entry, null, 2) + '\n').toString('base64'),
-            });
-
-            const body = [
-              `Closes #${issue.number}`, '',
-              '```json', JSON.stringify(entry, null, 2), '```', '',
-              'Before merging, review the website and its portal on desktop and mobile.',
-            ].join('\n');
-            const open = (await github.rest.pulls.list({ owner, repo, head: `${owner}:${branch}`, state: 'open' })).data;
-            const pr = open[0] ? (await github.rest.pulls.update({ owner, repo, pull_number: open[0].number, body })).data
-              : (await github.rest.pulls.create({ owner, repo, head: branch, base, title: `申请收录 / Request listing: ${slug}`, body })).data;
-            await say(`已生成 #${pr.number}，等待维护者审核。合并后，网站将随下一次目录发布显示在传送门中。\n#${pr.number} is ready for review. Once merged, the website will appear in portals after the next directory publication.`);
+            const { prepareRequest } = await import(`${process.env.GITHUB_WORKSPACE}/tools/listing-github.mjs`);
+            await prepareRequest({ github, context, core });
+  inspect:
+    needs: prepare
+    if: needs.prepare.outputs.event != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      report: ${{ steps.inspect.outputs.report }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: node -e "require('node:fs').writeFileSync(process.env.RUNNER_TEMP + '/listing-event.json', process.env.LISTING_EVENT)"
+        env:
+          LISTING_EVENT: ${{ needs.prepare.outputs.event }}
+      - run: node tools/check-listing.mjs --issue "$RUNNER_TEMP/listing-event.json"
+        id: inspect
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: listing-${{ github.event.issue.number }}
+          path: tools/.check/listing/
+          retention-days: 7
+  propose:
+    needs: [prepare, inspect]
+    if: always() && !cancelled() && needs.prepare.outputs.event != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@v9
+        env:
+          LISTING_REPORT: ${{ needs.inspect.outputs.report }}
+          LISTING_EVENT: ${{ needs.prepare.outputs.event }}
+        with:
+          script: |
+            const { applyRequest } = await import(`${process.env.GITHUB_WORKSPACE}/tools/listing-github.mjs`);
+            await applyRequest({ github, context, core,
+              expected: JSON.parse(process.env.LISTING_EVENT), report: JSON.parse(process.env.LISTING_REPORT || 'null') });

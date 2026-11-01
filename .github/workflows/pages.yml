@@ -18,6 +18,8 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  issues: write
+  pull-requests: read
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -29,10 +31,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
         with:
-          node-version: 20
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
       - run: bash tools/build.sh
       - name: The shared directory (main repository only)
         if: vars.HOMECRAFT_DIRECTORY == 'true'
@@ -43,3 +47,21 @@ jobs:
           path: dist
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify published directory
+        id: verify
+        if: vars.HOMECRAFT_DIRECTORY == 'true'
+        run: node tools/verify-publication.mjs dist/worlds.json "${PAGE_URL}worlds.json"
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+      - name: Update listing status
+        if: always() && !cancelled() && vars.HOMECRAFT_DIRECTORY == 'true'
+        uses: actions/github-script@v9
+        env:
+          DIRECTORY_VERIFIED: ${{ steps.verify.outputs.verified }}
+        with:
+          script: |
+            const { readFileSync, existsSync } = await import('node:fs');
+            const { notifyPublication } = await import(`${process.env.GITHUB_WORKSPACE}/tools/listing-github.mjs`);
+            const path = `${process.env.GITHUB_WORKSPACE}/dist/worlds.json`;
+            await notifyPublication({ github, repo: context.repo, successful: process.env.DIRECTORY_VERIFIED === 'true',
+              directory: existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null });

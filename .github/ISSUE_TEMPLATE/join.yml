@@ -1,70 +1,70 @@
-name: 申请收录 / Request listing
-description: 申请将网站收录到 Homecraft 公共目录。Request a listing in the Homecraft public directory.
-title: "申请收录 / Request listing: "
+name: Request listing / 申请收录
+description: Request a listing in the Homecraft public directory. 申请将网站收录到 Homecraft 公共目录。
+title: "Request listing / 申请收录: "
 labels: [join]
 body:
   - type: markdown
     attributes:
       value: |
-        提交的资料会公开。审核通过后，网站将随下一次目录发布显示在传送门中。
+        Submitted information is public. Keep a working portal connected to the shared directory. Existing websites can install the portal plugin: https://github.com/terryHu7/homecraft/tree/main/plugin
 
-        Submitted information is public. Approved websites appear in portals after the next directory publication.
+        提交的资料会公开。请保留连接公共目录的传送门。已有网站可以安装传送门插件：https://github.com/terryHu7/homecraft/tree/main/plugin
   - type: input
     id: url
     attributes:
-      label: 网址 / Address
-      description: https:// 开头。Starts with https://.
+      label: Address / 网址
+      description: A public HTTPS URL. 可公开访问的 HTTPS 网址。
       placeholder: https://alex.github.io/home/
     validations:
       required: true
   - type: input
     id: name
     attributes:
-      label: 网站名称 / Website name
-      description: 60 字以内。Up to 60 characters.
+      label: Website name / 网站名称
+      description: Up to 60 characters. 60 字以内。
       placeholder: Alex's Home
     validations:
       required: true
   - type: input
     id: name_en
     attributes:
-      label: 英文名称（可选）/ English name (optional)
-      description: 与上方名称不同时填写。Fill in only if different from the name above.
+      label: English name (optional) / 英文名称（可选）
+      description: Fill in only if different from the name above. 与上方名称不同时填写。
   - type: input
     id: owner
     attributes:
-      label: 作者名称 / Author name
-      description: 40 字以内。Up to 40 characters.
+      label: Author name / 作者名称
+      description: Up to 40 characters. 40 字以内。
     validations:
       required: true
   - type: dropdown
     id: lang
     attributes:
-      label: 网站语言 / Languages
+      label: Languages / 网站语言
       options:
-        - 中文和英文 / Chinese and English
-        - 中文 / Chinese
+        - Chinese and English / 中文和英文
+        - Chinese / 中文
         - English / 英文
     validations:
       required: true
   - type: input
     id: intro
     attributes:
-      label: 简介 / Introduction
-      description: 120 字以内。留空时从 homecraft.json 读取。Up to 120 characters; read from homecraft.json if left blank.
+      label: Introduction / 简介
+      description: Up to 120 characters. Leave blank only if homecraft.json provides intro. 120 字以内；homecraft.json 已提供 intro 时可留空。
   - type: input
     id: intro_en
     attributes:
-      label: 英文简介（可选）/ English introduction (optional)
+      label: English introduction (optional) / 英文简介（可选）
   - type: input
     id: logo
     attributes:
       label: Logo
-      description: 同一网站下的方形图片，100 KB 以内。留空时从 homecraft.json 读取。Square image on the same website, up to 100 KB; read from homecraft.json if left blank.
+      description: A square image on the same website, up to 100 KB. Leave blank only if homecraft.json provides logo. 同一网站下的方形图片，不超过 100 KB；homecraft.json 已提供 logo 时可留空。
       placeholder: https://alex.github.io/home/assets/logo.png
   - type: input
     id: preview
     attributes:
-      label: 预览图（可选）/ Preview image (optional)
-      description: 例如 og.jpg。For example, your og.jpg.
+      label: Preview image (optional) / 预览图（可选）
+      description: An image on the same website, such as og.jpg. 同一网站下的图片，例如 og.jpg。
       placeholder: https://alex.github.io/home/assets/og.jpg

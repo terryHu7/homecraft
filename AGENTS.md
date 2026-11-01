@@ -4,6 +4,13 @@
 
 Homecraft is a Minecraft-style 3D personal website template. The project uses Three.js and native ES modules, and runs without a build step.
 
+## Contribution Workflow
+
+- Keep one purpose per PR. Use `type(scope): description` for PR titles and final commits, with English descriptions and original website names. Listing data belongs in its own PR.
+- Public forms, bot replies and shared instructions use English first, followed by Chinese. Keep both complete, state the required action directly, and use consistent product terms.
+- Changes to public wording require the maintainer's confirmation before publication, including generated issue replies and PR descriptions. Prepare the exact text for review.
+- Wait for PR title, Listing request and Checks to pass before merging. Use Squash and merge with the PR title. Verify the published result before reporting completion.
+
 ## Development Principles
 
 1. **Ensure mobile experience.** Follow the performance budget. After any functional or visual change, check the `?debug` overlay or run `npm run check`.

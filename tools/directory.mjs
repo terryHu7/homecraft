@@ -31,13 +31,15 @@ const TEMPLATE_NAME = 'My Home';
 const text = (value, max) => typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= max && !/[\u0000-\u001f<>`]/.test(value);
 const words = (value, max) => text(value, max) || (value && typeof value === 'object' && !Array.isArray(value) &&
   Object.keys(value).every(k => LANGS.has(k)) && Object.keys(value).length > 0 && Object.values(value).every(v => text(v, max)));
-function httpsUrl(value) {
+export function httpsUrl(value) {
+  if (typeof value !== 'string' || /[\s<>`]/.test(value)) return null;
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && !url.username && !url.password && url.hostname.includes('.') && value.length <= 200 ? url : null;
+    return url.protocol === 'https:' && !url.username && !url.password && url.hostname.includes('.') && !/^(?:localhost|127\.|0\.|10\.|192\.168\.|169\.254\.|172\.(?:1[6-9]|2\d|3[01])\.)/i.test(url.hostname) && !/\.(?:local|localhost|internal)$/i.test(url.hostname) && value.length <= 200 ? url : null;
   } catch { return null; }
 }
 export const keyOf = value => { const url = new URL(value); return url.origin + url.pathname.replace(/\/$/, ''); };
+export const isBlocked = (value, blocked = []) => blocked.some(address => keyOf(value) === keyOf(address) || keyOf(value).startsWith(keyOf(address) + '/'));
 
 // The most every portal shows before cutting (engine/portal.js, door-metadata.js),
 // so nothing listed is ever cut short.
@@ -60,7 +62,7 @@ export function problems(entry) {
   if (!words(entry.intro, MAX.intro)) out.push(`intro: one line, 1–${MAX.intro} characters, or { "zh": …, "en": … }`);
   const logo = httpsUrl(entry.logo);
   if (!logo || (url && logo.origin !== url.origin)) out.push('logo: a square https:// image on the world’s own site (128×128 is plenty)');
-  if (entry.preview !== undefined && !httpsUrl(entry.preview)) out.push('preview: an https:// image address on the world’s own site');
+  if (entry.preview !== undefined && (!httpsUrl(entry.preview) || (url && httpsUrl(entry.preview).origin !== url.origin))) out.push('preview: an https:// image address on the world’s own site');
   if (entry.homecraft !== true) out.push('homecraft: true (only worlds with a portal are listed: a Homecraft world, or a site with the portal plugin)');
   if (entry.added !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(entry.added)) out.push('added: YYYY-MM-DD');
   return out;
@@ -79,6 +81,7 @@ export async function reachable(value) {
     await new Promise(resolve => setTimeout(resolve, wait));
     try {
       const res = await fetch(value, { redirect: 'follow', signal: AbortSignal.timeout(15000), headers: HEADERS });
+      await res.body?.cancel();
       if (res.status < 400 || [401, 403, 429].includes(res.status)) return true;
       if ([404, 410].includes(res.status)) return false;
     } catch {}
@@ -87,15 +90,26 @@ export async function reachable(value) {
 }
 
 // Does the logo load as a small image? '' when it does.
-export async function logoProblem(value) {
+export async function inspectLogo(value) {
   try {
     const res = await fetch(value, { redirect: 'follow', signal: AbortSignal.timeout(15000), headers: HEADERS });
-    if (!res.ok) return `logo: ${value} answers ${res.status}`;
-    if (!(res.headers.get('content-type') || '').startsWith('image/')) return `logo: ${value} is not an image`;
-    const bytes = Buffer.from(await res.arrayBuffer()), size = bytes.byteLength;
-    if (createHash('sha256').update(bytes).digest('hex') === TEMPLATE_LOGO) return `logo: still the template's grass block`;
-    return size > LOGO_BYTES ? `logo: ${Math.ceil(size / 1024)} KB; keep it under ${LOGO_BYTES / 1024} KB (128×128 is plenty)` : '';
-  } catch { return `logo: ${value} cannot be loaded`; }
+    if (!res.ok) { await res.body?.cancel(); return { status: [401, 403, 429].includes(res.status) || res.status >= 500 ? 'review' : 'fail' }; }
+    if (!(res.headers.get('content-type') || '').startsWith('image/') || Number(res.headers.get('content-length')) > LOGO_BYTES) {
+      await res.body?.cancel(); return { status: 'fail' };
+    }
+    let size = 0; const chunks = [];
+    for await (const chunk of res.body) {
+      size += chunk.length;
+      if (size > LOGO_BYTES) return { status: 'fail' };
+      chunks.push(chunk);
+    }
+    if (!size) return { status: 'fail' };
+    return { status: 'pass', template: createHash('sha256').update(Buffer.concat(chunks)).digest('hex') === TEMPLATE_LOGO };
+  } catch { return { status: 'review' }; }
+}
+export async function logoProblem(value) {
+  const result = await inspectLogo(value);
+  return result.status === 'pass' ? '' : `logo: ${value} ${result.status === 'review' ? 'cannot be loaded' : 'must be an image of at most 100 KB'}`;
 }
 
 // Does the world have a portal? Its homecraft.json says "homecraft": true, or
@@ -109,8 +123,20 @@ export async function portalProblem(value) {
   return 'portal: none found. A Homecraft world publishes homecraft.json with "homecraft": true beside its page; any other site adds the portal plugin (plugin/README.md)';
 }
 
+export function validateSettings(settings) {
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return ['expected an object'];
+  const errors = [];
+  for (const field of Object.keys(settings)) if (!['join', 'all', 'pinned', 'blocked'].includes(field)) errors.push(`unknown field ${field}`);
+  for (const field of ['join', 'all']) if (settings[field] != null && !httpsUrl(settings[field])) errors.push(`${field}: expected an HTTPS URL`);
+  if (settings.pinned !== undefined && (!Array.isArray(settings.pinned) || !settings.pinned.every(s => typeof s === 'string' && /^[a-z0-9][a-z0-9-]{0,40}$/.test(s)))) errors.push('pinned: expected entry filenames without .json');
+  if (settings.blocked !== undefined && (!Array.isArray(settings.blocked) || !settings.blocked.every(u => httpsUrl(u)))) errors.push('blocked: expected HTTPS URLs');
+  return errors;
+}
+
 export function load() {
   const settings = JSON.parse(readFileSync(DIR + '_settings.json', 'utf8'));
+  const settingsProblems = validateSettings(settings);
+  if (settingsProblems.length) throw Error(`directory/_settings.json: ${settingsProblems.join('; ')}`);
   const entries = readdirSync(DIR).filter(f => f.endsWith('.json') && !f.startsWith('_')).sort().map(file => {
     let data = null, issues = [];
     try { data = JSON.parse(readFileSync(DIR + file, 'utf8')); issues = problems(data); } catch (e) { issues = [`not valid JSON (${e.message})`]; }
@@ -150,6 +176,11 @@ async function main([command, ...args]) {
   const down = new Set(), broken = new Map();
   if (online) {
     const checks = await Promise.all(good.filter(e => !only.length || only.includes(e.file)).map(async e => {
+      if (args.includes('--portal')) {
+        const { inspectEntry } = await import('./check-listing.mjs');
+        const report = await inspectEntry(e.data);
+        return [e, true, [...report.issues, ...report.review]];
+      }
       const [up, ...found] = await Promise.all([reachable(e.data.url), logoProblem(e.data.logo), portalProblem(e.data.url)]);
       return [e, up, found.filter(Boolean)];
     }));
@@ -163,9 +194,10 @@ async function main([command, ...args]) {
     process.exit(bad.length || down.size || broken.size ? 1 : 0);
   }
   if (command === 'build' && args[0] && !args[0].startsWith('--')) {
+    if (bad.length) throw Error('Directory data is invalid; publication stopped.');
     const pinned = (settings.pinned || []).map(slug => good.find(e => e.slug === slug)).filter(Boolean);
     const rest = weekly(good.filter(e => !pinned.includes(e)));
-    const worlds = [...pinned, ...rest].filter(e => !down.has(e.slug)).map(({ data }) => {
+    const worlds = [...pinned, ...rest].filter(e => !down.has(e.slug) && !isBlocked(e.data.url, settings.blocked)).map(({ data }) => {
       const { added, ...shown } = data;
       return shown;
     });
