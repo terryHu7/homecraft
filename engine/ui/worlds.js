@@ -17,6 +17,8 @@ function face(holder, world) {
   holder.append(img);
 }
 export function createWorldList({ onChoose }) {
+  // Fetch while the visitor is entering the world, before they open the list.
+  void getWorlds();
   let root = null, revision = 0;
   const go = world => { if (world && !isCurrentWorld(world.url)) onChoose(world); };
   function row(world) {
@@ -61,25 +63,31 @@ export function createWorldList({ onChoose }) {
       event.preventDefault(); event.stopPropagation(); go(rows[at].world);
     }
   }
-  async function load() {
+  async function load(force = false) {
     const ticket = ++revision, host = root;
     if (!host) return;
-    host.dataset.loaded = 'false';
-    const screen = document.createElement('div'); screen.className = 'world-screen';
-    const initial = initialWorlds();
-    if (initial.worlds.length) screen.append(group(t('世界', 'Worlds'), initial.worlds));
-    else screen.append(status(t('正在获取世界…', 'Loading worlds…')));
-    host.replaceChildren(screen);
-    const { worlds, join, all, missed } = await getWorlds();
+    const { ready, ...initial } = initialWorlds();
+    host.dataset.loaded = String(ready);
+    paint(initial, !ready);
+    const result = await getWorlds(force);
     if (ticket !== revision || root !== host) return;
-    const focused = document.activeElement?.dataset.world;
-    host.dataset.loaded = 'true'; screen.replaceChildren();
+    host.dataset.loaded = 'true';
+    if (!ready || JSON.stringify(result) !== JSON.stringify(initial)) paint(result);
+  }
+  function paint({ worlds, join, all, missed }, loading = false) {
+    const host = root, focused = document.activeElement?.dataset.world;
+    const scroll = host.querySelector('.world-screen')?.scrollTop || 0;
+    const screen = document.createElement('div'); screen.className = 'world-screen';
+    host.setAttribute('aria-busy', String(loading));
+    host.replaceChildren(screen);
     if (worlds.length) screen.append(group(t('世界', 'Worlds'), worlds));
+    else if (loading) screen.append(status(t('正在获取列表…', 'Loading the list…')));
     else screen.append(status(t('暂时没有可访问的世界。', 'No worlds are available right now.')));
+    screen.scrollTop = scroll;
     if (focused) [...screen.querySelectorAll('.world-row')].find(el => el.dataset.world === focused)?.focus();
-    if (missed || !worlds.length) {
+    if (!loading && (missed || !worlds.length)) {
       const retry = Object.assign(document.createElement('button'), { className: 'world-refresh', type: 'button', textContent: t('重试', 'Try again') });
-      retry.addEventListener('click', load); host.append(retry);
+      retry.addEventListener('click', () => { void load(true); }); host.append(retry);
     }
     if (all || join) {
       const footer = document.createElement('div'); footer.className = 'world-footer';
