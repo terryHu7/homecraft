@@ -60,6 +60,7 @@
   <article class="page" id="mailbox" data-station="mailbox">
     <h2 data-zh="留言">Mailbox</h2>
     <form class="mailbox" method="post" enctype="text/plain">
+      <input name="subject" maxlength="80" required placeholder="Subject" aria-label="Subject (required)" data-zh-placeholder="主题" data-zh-label="主题，必填">
       <textarea name="message" rows="6" maxlength="1000" required placeholder="Write something" aria-label="Write something" data-zh-placeholder="输入文字" data-zh-label="输入文字"></textarea>
       <input name="contact" maxlength="120" required autocomplete="email" placeholder="Email or other contact (required)" aria-label="How to reach you (required)" data-zh-placeholder="联系方式（必填，邮箱或微信等）" data-zh-label="联系方式，必填">
       <input class="trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">

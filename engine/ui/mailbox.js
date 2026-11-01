@@ -9,6 +9,7 @@ const WORDS = {
   loading: ['正在加载验证…', 'Loading verification…'],
   sending: ['发送中…', 'Sending…'],
   sent: ['已发送', 'Sent'],
+  subject: ['请填写单行主题，最多 80 字。', 'Please enter a single-line subject (up to 80 characters).'],
   contact: ['请填写联系方式。', 'Please leave a way to reach you.'],
   bad: ['请填写留言，留言最多 1000 字，联系方式最多 120 字。', 'Please write a note (up to 1,000 characters) and contact details (up to 120).'],
   verify: ['请完成真人验证后再发送。', 'Please complete the verification before sending.'],
@@ -104,13 +105,17 @@ export function createMailboxForm({ onSent } = {}) {
       if (pending) return;
       if (!ENDPOINT && !EMAIL) return;
       const data = Object.fromEntries(new FormData(form));
+      data.subject = (data.subject || '').trim();
       data.message = data.message.trim();
       data.contact = data.contact.trim();
       data.lang = t('zh', 'en');
+      if (!data.subject || data.subject.length > 80 || /[\u0000-\u001f\u007f\u2028\u2029]/u.test(data.subject)) {
+        show('subject'); form.elements.subject?.focus(); return;
+      }
       if (!data.contact) { show('contact'); form.elements.contact.focus(); return; }
       if (!data.message || !form.reportValidity()) { show('bad'); return; }
       if (!ENDPOINT) {
-        location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(data.message.slice(0, 40))}&body=${encodeURIComponent(`${data.message}\n\n${data.contact}`)}`;
+        location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(`${data.message}\n\n${data.contact}`)}`;
         show('opened');
         return;
       }
@@ -132,7 +137,7 @@ export function createMailboxForm({ onSent } = {}) {
           signal: AbortSignal.timeout(15000),
         });
         const reply = await res.json().catch(() => ({}));
-        code = reply.ok ? 'sent' : ['limit', 'bad', 'contact', 'verify', 'unavailable'].includes(reply.code) ? reply.code : 'failed';
+        code = reply.ok ? 'sent' : ['limit', 'bad', 'subject', 'contact', 'verify', 'unavailable'].includes(reply.code) ? reply.code : 'failed';
       } catch {
         code = 'failed';
       }
@@ -175,7 +180,7 @@ export function createMailboxForm({ onSent } = {}) {
     };
     // A desktop already has its keyboard out; on a phone, wait for a tap.
     if (matchMedia('(pointer: fine)').matches) requestAnimationFrame(() => {
-      if (active) form.querySelector('textarea').focus({ preventScroll: true });
+      if (active) (form.elements.subject || form.querySelector('textarea')).focus({ preventScroll: true });
     });
     if (ENDPOINT) void startVerification();
   }
