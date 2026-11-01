@@ -8,26 +8,34 @@
 export function createInput(canvas, handlers) {
   const keys = new Set();
   const move = { x: 0, z: 0, run: false, up: false, down: false };
-  const MOVE_KEYS = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '];
+  const MOVE_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space',
+    'w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ']);
   let lastSpace = -1e9;
   const pointers = new Map();
   let drag = null, pinch = null;
   const blocked = () => handlers.blocked?.();
 
-  const typing = e => e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+  // Movement follows physical keys, even when an IME/layout changes `key`
+  // between keydown and keyup. Keep a fallback for keyboards without `code`.
+  const keyId = e => e.code && e.code !== 'Unidentified' ? e.code : e.key.toLowerCase();
+  const held = (code, fallback) => keys.has(code) || keys.has(fallback);
+  const typing = e => e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement ||
+    e.target instanceof HTMLSelectElement || e.target instanceof HTMLElement && e.target.isContentEditable;
   addEventListener('keydown', e => {
-    const k = e.key.toLowerCase();
+    const k = e.key.toLowerCase(), id = keyId(e), movement = MOVE_KEYS.has(id);
     // Ctrl is the descend key; with it held, only movement keys pass through.
-    if (k === 'control') { if (!typing(e) && !blocked()) keys.add(k); return; }
-    if (typing(e) || e.metaKey || e.altKey || (e.ctrlKey && !MOVE_KEYS.includes(k))) return;
+    if (id === 'ControlLeft' || id === 'ControlRight' || id === 'control') { if (!typing(e) && !blocked()) keys.add(id); return; }
+    if (typing(e) || e.metaKey || e.altKey || (e.ctrlKey && !movement)) return;
     if (k === 'escape') { handlers.escape?.(); return; }
-    if (/^[1-9]$/.test(k) && !handlers.shortcutsBlocked?.()) {
+    if (!movement && /^[1-9]$/.test(k) && !handlers.shortcutsBlocked?.()) {
       if (!e.repeat) handlers.slot?.(Number(k));
       return;
     }
     if (blocked()) return;
-    if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
-    if (k === ' ') {
+    // Own movement keys while exploring, including browser actions such as
+    // Ctrl+D (bookmark on Windows) and the IME's default text handling.
+    if (movement) e.preventDefault();
+    if (id === 'Space' || id === ' ') {
       // Keep a focused button from being pressed by the same Space.
       if (document.activeElement instanceof HTMLButtonElement) document.activeElement.blur();
       if (!e.repeat) {
@@ -36,19 +44,21 @@ export function createInput(canvas, handlers) {
         else { lastSpace = now; handlers.jump?.(); }
         handlers.anyKey?.(e);
       }
-      keys.add(k);
+      keys.add(id);
       return;
     }
     if (!e.repeat) {
-      if (k === 'f' || k === 'e' || k === 'enter') handlers.interact?.();
-      else if (k === 'm' || k === 'tab') { e.preventDefault(); handlers.map?.(); }
-      else if (k === 'v') handlers.view?.();
-      else if (k === 'p') handlers.phone?.();
+      if (!movement) {
+        if (k === 'f' || k === 'e' || k === 'enter') handlers.interact?.();
+        else if (k === 'm' || k === 'tab') { e.preventDefault(); handlers.map?.(); }
+        else if (k === 'v') handlers.view?.();
+        else if (k === 'p') handlers.phone?.();
+      }
       handlers.anyKey?.(e);
     }
-    keys.add(k);
+    keys.add(id);
   });
-  addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+  addEventListener('keyup', e => keys.delete(keyId(e)));
   addEventListener('blur', clear);
   const isTouch = e => e.pointerType === 'touch';
 
@@ -105,16 +115,16 @@ export function createInput(canvas, handlers) {
   function read() {
     const pad = handlers.pad?.();
     let x = pad?.x || 0, z = pad?.z || 0;
-    if (keys.has('a') || keys.has('arrowleft')) x -= 1;
-    if (keys.has('d') || keys.has('arrowright')) x += 1;
-    if (keys.has('w') || keys.has('arrowup')) z -= 1;
-    if (keys.has('s') || keys.has('arrowdown')) z += 1;
+    if (held('KeyA', 'a') || held('ArrowLeft', 'arrowleft')) x -= 1;
+    if (held('KeyD', 'd') || held('ArrowRight', 'arrowright')) x += 1;
+    if (held('KeyW', 'w') || held('ArrowUp', 'arrowup')) z -= 1;
+    if (held('KeyS', 's') || held('ArrowDown', 'arrowdown')) z += 1;
     const len = Math.hypot(x, z);
     if (len > 1) { x /= len; z /= len; }
     move.x = x; move.z = z;
-    move.run = keys.has('shift');
-    move.up = keys.has(' ') || !!pad?.up;
-    move.down = keys.has('control') || !!pad?.down;
+    move.run = held('ShiftLeft', 'shift') || keys.has('ShiftRight');
+    move.up = held('Space', ' ') || !!pad?.up;
+    move.down = held('ControlLeft', 'control') || keys.has('ControlRight') || !!pad?.down;
     return move;
   }
 
