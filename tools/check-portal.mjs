@@ -152,17 +152,18 @@ try {
     assert.equal(await page.locator(`.world-list button[data-world="${base}/"]`).count(), 0); await close();
     directory = { ...directory, blocked: [] };
 
-    // A response still in flight when the list closes cannot replace the page.
+    // A refresh still in flight when the list closes cannot replace the page.
+    // The startup fetch has already finished by the time the world is ready.
+    directoryDown = true; await fresh();
     holdDirectory = true; releaseDirectory = null;
-    await page.reload(); await ready();
+    await page.locator('.world-refresh').click();
     const held = Date.now();
     while (!releaseDirectory && Date.now() - held < 5000) await new Promise(resolve => setTimeout(resolve, 10));
     assert(releaseDirectory, 'The directory request was not held');
-    await page.evaluate(() => __home.openPortal());
-    await page.locator('.world-list-status').waitFor();
     await close();
     await page.evaluate(() => __home.go('about'));
     holdDirectory = false; releaseDirectory();
+    directoryDown = false;
     await page.waitForTimeout(100);
     assert.equal(await page.locator('#panel').getAttribute('data-station'), 'about');
     assert.equal(await page.locator('.world-directory').count(), 0);
