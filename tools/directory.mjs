@@ -217,4 +217,6 @@ async function main([command, ...args]) {
   process.exit(2);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] || '').href) await main(process.argv.slice(2));
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+  main(process.argv.slice(2)).catch(error => { console.error(error); process.exitCode = 1; });
+}
