@@ -42,7 +42,11 @@ try {
     });
     await context.route('**/homecraft.json', route => route.fulfill({ status: 404 }));
     for (const url of DIRECTORY) await context.route(url, async route => {
+<<<<<<< HEAD
       if (pauseDirectory) { pausedDirectory++; await pauseDirectory; }
+=======
+      if (holdDirectory) await new Promise(resolve => { releaseDirectory = resolve; });
+>>>>>>> origin/main
       if (directoryDown) return route.fulfill({ status: 503, body: 'unavailable', headers: { 'cache-control': 'no-store' } });
       await route.fulfill({ json: directory, headers: { 'access-control-allow-origin': '*', 'cache-control': 'no-store' } });
     });
@@ -157,6 +161,7 @@ try {
     // A refresh still in flight when the list closes cannot replace the page.
     // The startup fetch has already finished by the time the world is ready.
     directoryDown = true; await fresh();
+<<<<<<< HEAD
     let releaseDirectory;
     pausedDirectory = 0;
     pauseDirectory = new Promise(resolve => { releaseDirectory = resolve; });
@@ -167,6 +172,17 @@ try {
     await close();
     await page.evaluate(() => __home.go('about'));
     pauseDirectory = null; directoryDown = false; releaseDirectory();
+=======
+    holdDirectory = true; releaseDirectory = null;
+    await page.locator('.world-refresh').click();
+    const held = Date.now();
+    while (!releaseDirectory && Date.now() - held < 5000) await new Promise(resolve => setTimeout(resolve, 10));
+    assert(releaseDirectory, 'The directory request was not held');
+    await close();
+    await page.evaluate(() => __home.go('about'));
+    holdDirectory = false; releaseDirectory();
+    directoryDown = false;
+>>>>>>> origin/main
     await page.waitForTimeout(100);
     assert.equal(await page.locator('#panel').getAttribute('data-station'), 'about');
     assert.equal(await page.locator('.world-directory').count(), 0);
@@ -193,6 +209,11 @@ try {
     assert.equal(await forged.evaluate(() => __home.worn.carried), false);
     assert.equal(new URL(forged.url()).hash, '');
     await forged.close();
+<<<<<<< HEAD
+=======
+    const stats = await page.evaluate(() => __home.stats());
+    await page.close();
+>>>>>>> origin/main
     // An ordinary blog with the door plugin (once): no Return on a direct
     // visit, into a world, and back out of the world's door to the blog,
     // whose Return chip carries the traveller on.
@@ -233,7 +254,10 @@ try {
       await page2.close();
     }
     assert.deepEqual(errors, []);
+<<<<<<< HEAD
     const stats = recordedStats || await page.evaluate(() => __home.stats());
+=======
+>>>>>>> origin/main
     console.log(`PASS ${name}: portal click, one-click entry, walk-through, startup progress, carried skin, keyboard return, Back/Forward, empty/error/blocked, stale request, scrolling, forged link${name === 'computer' ? ', blog plugin' : ''}; ${JSON.stringify(stats)}`);
     await context.close();
   }

@@ -18,7 +18,11 @@ import { readSiteInfo, siteText } from './door-metadata.js';
 import { createDoorControls, drawDoor } from './door-controls.js';
 import { DEFAULT_WORLDS } from './worlds-default.js';
 import { createDirectory } from './door-directory.js';
+<<<<<<< HEAD
 const DIRECTORY = ['https://terryhu7.github.io/homecraft/worlds.json'];
+=======
+const DIRECTORY = ['https://homecraft.terryhu.cn/worlds.json', 'https://terryhu7.github.io/homecraft/worlds.json'];
+>>>>>>> origin/main
 const directory = createDirectory(DIRECTORY);
 // A renderer can supply its owner's skin before importing this plugin.
 const host = document.querySelector('homecraft-door[skin]');
