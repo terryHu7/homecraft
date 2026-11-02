@@ -1,0 +1,49 @@
+name: Prepare engine Release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Reviewed tag on main, e.g. v0.1.1'
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: engine-release
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: github.repository == 'terryHu7/homecraft'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      PLAYWRIGHT_CHANNEL: chromium
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Verify the reviewed tag
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$(node -p "'v' + require('./package.json').version")" = "$RELEASE_TAG"
+          test "$(git describe --exact-match --tags HEAD)" = "$RELEASE_TAG"
+          git merge-base --is-ancestor HEAD origin/main
+          test -f "docs/releases/$RELEASE_TAG.md"
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run check:pr
+      - run: npm run release:prepare
+      - name: Create a draft for final review
+        run: |
+          gh release create "$RELEASE_TAG" --verify-tag --draft --title "Homecraft $RELEASE_TAG" \
+            --notes-file "docs/releases/$RELEASE_TAG.md" \
+            .release/homecraft-engine.json .release/homecraft-updater.tgz .release/SHA256SUMS
+        env:
+          GH_TOKEN: ${{ github.token }}

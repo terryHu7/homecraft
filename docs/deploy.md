@@ -63,7 +63,7 @@ location / {
 
 ## Updating an Existing Website
 
-To pick up shared portal fixes in an existing fork, merge the upstream changes or replace the complete `engine/` directory with the current Homecraft copy, then redeploy. Keep your own `world/`, `home.config.js`, `homecraft.json`, `index.html` and `assets/`.
+Follow [Update Homecraft](../engine/UPDATING.md) to update the shared engine. The guide covers existing forks, local modifications, backups, and conflict resolution. Preview and test the updated source, then redeploy through your existing hosting setup.
 
 Deployed websites serve their own JavaScript copies. Publishing the shared directory updates their listings, while engine improvements take effect after each website updates and redeploys its code. The portal protocol remains compatible with older websites.
 

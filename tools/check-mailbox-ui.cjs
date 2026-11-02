@@ -1,6 +1,7 @@
 // Isolated browser fixtures: no real challenges, tokens or mail deliveries.
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
 const base = process.argv[2] || 'http://127.0.0.1:4192';
 const endpoint = 'https://mailbox.example.test/send';
 const script = `
@@ -21,12 +22,17 @@ const script = `
 
 (async () => {
   const browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome', headless: true });
-  async function configuredPage(options) {
+  async function configuredPage({ legacy = false, emailOnly = false, ...options } = {}) {
     const page = await browser.newPage(options);
+    if (legacy) {
+      const html = execFileSync('git', ['show', '8a8e101:index.html'], { encoding: 'utf8' });
+      await page.route(url => url.origin === new URL(base).origin && url.pathname === '/', route =>
+        route.fulfill({ contentType: 'text/html', body: html }));
+    }
     await page.route('**/home.config.js', async route => {
       const response = await route.fetch();
       const body = (await response.text()).replace(/mailbox: \{[^}]*\}/,
-        "mailbox: { endpoint: 'https://mailbox.example.test/send', email: 'public@example.test', turnstileSitekey: 'test-sitekey' }");
+        `mailbox: { endpoint: '${emailOnly ? '' : endpoint}', email: 'public@example.test', turnstileSitekey: 'test-sitekey' }`);
       await route.fulfill({ response, body });
     });
     return page;
@@ -170,6 +176,49 @@ const script = `
     assert.equal(await empty.locator('.mailbox-status').innerText(), '');
     assert.equal(await empty.locator('.mailbox-verification').isVisible(), false);
     await empty.close();
-    console.log('PASS: Chinese/English forms and live language switch; localized challenge/errors; subject/contact required; exact subject payload; token expiry/retry; modal cleanup; 390/320px; no-JS fallback; no real email sent');
+    // Actual initial HTML + current engine: older forks do not have a subject
+    // field, for either the mail-app fallback or verified Worker submission.
+    for (const plain of [false, true]) for (const emailOnly of [false, true]) {
+      const legacy = await configuredPage({ legacy: true, emailOnly, viewport: { width: plain ? 390 : 1280, height: 844 }, isMobile: plain, hasTouch: plain });
+      const errors = [], deliveries = [];
+      legacy.on('pageerror', error => errors.push(error.message));
+      await legacy.route('https://challenges.cloudflare.com/turnstile/v0/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: script }));
+      await legacy.route(endpoint, route => {
+        if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST' } });
+        deliveries.push(route.request().postDataJSON());
+        return route.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: '{"ok":true,"code":"sent"}' });
+      });
+      await legacy.goto(`${base}/?${plain ? 'plain&' : ''}lang=en${plain ? '#mailbox' : ''}`);
+      if (!plain) {
+        await legacy.waitForFunction(() => window.__home);
+        await legacy.evaluate(() => window.__home.go('mailbox'));
+      }
+      const form = legacy.locator(`${plain ? '#pages' : '#panel'} form.mailbox`);
+      await form.waitFor({ state: 'visible' });
+      assert.equal(await form.locator('[name="subject"]').count(), 0);
+      const message = 'Legacy note 🚀\nSecond line';
+      await form.locator('[name="contact"]').fill('visitor@example.com');
+      await form.locator('textarea').fill('   ');
+      await form.locator('button[type="submit"]').click();
+      assert.match(await form.locator('.mailbox-status').innerText(), /Please write a note/);
+      assert.equal(deliveries.length, 0);
+      await form.locator('textarea').fill(message);
+      if (!emailOnly) {
+        await legacy.waitForFunction(() => window.__mailboxTest?.widgets.size === 1);
+        await legacy.evaluate(() => window.__mailboxTest.pass());
+      }
+      await form.locator('button[type="submit"]').click();
+      if (emailOnly) {
+        await form.locator('.mailbox-status').getByText('Opened your mail app', { exact: true }).waitFor();
+        assert.equal(deliveries.length, 0);
+      } else {
+        await legacy.waitForFunction(() => document.querySelector(`${document.body.classList.contains('plain') ? '#pages' : '#panel'} form.mailbox`)?.classList.contains('is-sent'));
+        assert.equal(deliveries.length, 1);
+        assert.equal(deliveries[0].subject, [...message.replace(/\n/g, ' ')].slice(0, 24).join(''));
+      }
+      assert.deepEqual(errors, []);
+      await legacy.close();
+    }
+    console.log('PASS: bilingual mailbox; required subject/contact; token retry/cleanup; 390/320px; no-JS; initial fork HTML with new engine (modal/plain, mail app/Worker); no real email sent');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -30,11 +30,11 @@ Once you get used to this kind of personal website, it's hard to go back…
 
 <p align="center"><img src="docs/images/starter.webp" width="640" alt="Starter template"></p>
 
-The project includes a starter template, AI prompts and project guidelines. Fork the repository and start vibe coding your own world.
-
-Run `python3 tools/serve.py` in the project folder. The script finds an available port and opens the site in your browser.
+Run `python3 tools/serve.py` to start the site. The project includes a starter template, AI prompts, and project guidelines.
 
 The full source of Terry's Home is in [examples/terry-home](examples/terry-home).
+
+For future updates, see the [update guide](engine/UPDATING.md).
 
 ## Portal [🔗 Request listing](https://github.com/terryHu7/homecraft/issues/new/choose)
 

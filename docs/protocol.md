@@ -10,8 +10,6 @@ Public site details live in `homecraft.json` beside the home page; its fields an
 
 Portals read the shared directory from `https://terryhu7.github.io/homecraft/worlds.json`. The directory is generated from `directory/` in the main repository. See the [public directory](worlds.md) for listing instructions.
 
-传送门从 `https://terryhu7.github.io/homecraft/worlds.json` 读取公共目录。目录由主仓库的 `directory/` 生成，收录步骤见[公共目录](worlds.md)。
-
 Data example:
 
 ```json

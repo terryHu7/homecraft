@@ -105,10 +105,14 @@ export function createMailboxForm({ onSent } = {}) {
       if (pending) return;
       if (!ENDPOINT && !EMAIL) return;
       const data = Object.fromEntries(new FormData(form));
-      data.subject = (data.subject || '').trim();
       data.message = data.message.trim();
       data.contact = data.contact.trim();
+      // Early forks have no subject control. Keep their own HTML intact and
+      // use the old message-derived subject; forms with a control still require it.
+      data.subject = form.elements.namedItem('subject') ? (data.subject || '').trim()
+        : [...data.message.replace(/[\u0000-\u001f\u007f\u2028\u2029]/gu, ' ')].slice(0, 24).join('').trim();
       data.lang = t('zh', 'en');
+      if (!form.elements.namedItem('subject') && !data.message) { show('bad'); form.elements.message.focus(); return; }
       if (!data.subject || data.subject.length > 80 || /[\u0000-\u001f\u007f\u2028\u2029]/u.test(data.subject)) {
         show('subject'); form.elements.subject?.focus(); return;
       }
