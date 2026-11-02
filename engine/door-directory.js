@@ -10,12 +10,14 @@ export function createDirectory(sources, { maxAge = 60000, timeout = 3500 } = {}
       if (pending) return pending;
       if (!urls.length || (!force && checkedAt !== null && Date.now() - checkedAt < maxAge)) return Promise.resolve(snapshot);
       pending = fetchFirst(urls, timeout).then(data => {
-        checkedAt = Date.now();
         if (data) {
           // A slower-to-publish mirror must not replace a newer directory.
           const previous = Date.parse(snapshot?.updated), next = Date.parse(data.updated);
           if (!(previous > next)) snapshot = data;
         }
+        // A miss with nothing stored must be tried again. A failed refresh keeps
+        // the previous directory, and does not ask again for a minute.
+        if (snapshot) checkedAt = Date.now();
         return snapshot;
       }).finally(() => { pending = null; });
       return pending;

@@ -21,11 +21,10 @@ const DEFAULTS = {
   // Notes from the mailbox: `endpoint` is your deployed backend/mailbox Worker;
   // without one the note opens the visitor's mail app addressed to `email`.
   mailbox: { endpoint: '', email: '', turnstileSitekey: '' },
-  // The portal's list: the shared Homecraft directory, using the first valid
-  // answer from its mirrors. Every world reads the same directory, so these
-  // addresses never change: see docs/protocol.md.
+  // Published sources for the shared Homecraft directory. Multiple sources
+  // use the first valid answer. Keep these URLs aligned with docs/protocol.md.
   portal: {
-    directory: ['https://homecraft.terryhu.cn/worlds.json', 'https://terryhu7.github.io/homecraft/worlds.json'],
+    directory: ['https://terryhu7.github.io/homecraft/worlds.json'],
   },
   // The small "Made with homecraft" badge by the radar.
   badge: true,

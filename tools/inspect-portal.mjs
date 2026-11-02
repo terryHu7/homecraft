@@ -4,7 +4,7 @@ import { readFileSync, mkdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 
-export const PUBLIC_DIRECTORY = ['https://homecraft.terryhu.cn/worlds.json', 'https://terryhu7.github.io/homecraft/worlds.json'];
+export const PUBLIC_DIRECTORY = ['https://terryhu7.github.io/homecraft/worlds.json'];
 const key = value => { const u = new URL(value); return u.origin + u.pathname.replace(/\/index\.html$/, '').replace(/\/$/, ''); };
 const publicSource = value => { try { return PUBLIC_DIRECTORY.includes(new URL(value).origin + new URL(value).pathname); } catch { return false; } };
 const protocol = readFileSync(new URL('../engine/door-protocol.js', import.meta.url), 'utf8');

@@ -18,7 +18,7 @@ import { readSiteInfo, siteText } from './door-metadata.js';
 import { createDoorControls, drawDoor } from './door-controls.js';
 import { DEFAULT_WORLDS } from './worlds-default.js';
 import { createDirectory } from './door-directory.js';
-const DIRECTORY = ['https://homecraft.terryhu.cn/worlds.json', 'https://terryhu7.github.io/homecraft/worlds.json'];
+const DIRECTORY = ['https://terryhu7.github.io/homecraft/worlds.json'];
 const directory = createDirectory(DIRECTORY);
 // A renderer can supply its owner's skin before importing this plugin.
 const host = document.querySelector('homecraft-door[skin]');
@@ -144,7 +144,9 @@ class HomecraftDoor extends HTMLElement {
     const cached = directory.peek(), initial = worlds(zh, cached, !!cached);
     this.#paint(body, say, initial);
     const revision = ++this.#revision;
-    const result = worlds(zh, await directory.read());
+    let raw = await directory.read();
+    if (!raw) raw = await directory.read(true);
+    const result = worlds(zh, raw);
     if (revision !== this.#revision || !this.isConnected) return;
     if (JSON.stringify(result) !== JSON.stringify(initial)) this.#paint(body, say, result);
   }
