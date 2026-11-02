@@ -1,6 +1,6 @@
 {
   "name": "homecraft",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Build your own Minecraft-inspired 3D personal website.",
   "keywords": [
@@ -26,6 +26,9 @@
   "type": "module",
   "scripts": {
     "serve": "python3 tools/serve.py",
+    "update": "npx --yes https://github.com/terryHu7/homecraft/releases/latest/download/homecraft-updater.tgz",
+    "test:updates": "node --test tools/update-engine.test.mjs",
+    "release:prepare": "node tools/prepare-release.mjs",
     "check:site": "node tools/check-site.mjs",
     "check": "node tools/check-site.mjs && node tools/check.mjs",
     "check:portal": "node tools/sync-protocol.mjs --check && node tools/check-portal.mjs",

@@ -7,7 +7,10 @@ Homecraft is a Minecraft-style 3D personal website template. The project uses Th
 ## Contribution Workflow
 
 - Keep one purpose per PR. Use `type(scope): description` for PR titles and final commits, with English descriptions and original website names. Listing data belongs in its own PR.
-- Public forms, bot replies and shared instructions use English first, followed by Chinese. Keep both complete, state the required action directly, and use consistent product terms.
+- Always run `npm run check:pr` locally and ensure all tests pass before pushing or opening PRs. Never push unverified code.
+- Do not include `Co-authored-by` trailers in commits or PR merges.
+- Write technical documentation, Agent and skill instructions, workflow descriptions, release notes, PR descriptions, and CLI output in English. Use concise, professional language and describe concrete behavior. Avoid metaphors, colloquialisms, and promotional phrasing.
+- Public forms and bot replies use English first, followed by Chinese. Keep both complete and use consistent product terms.
 - Changes to public wording require the maintainer's confirmation before publication, including generated issue replies and PR descriptions. Prepare the exact text for review.
 - Wait for PR title, Listing request and Checks to pass before merging. Use Squash and merge with the PR title. Verify the published result before reporting completion.
 
@@ -26,7 +29,7 @@ world/            The user's world
   layout.js       Data: island bounds, spawn point, stations, prefab positions
   build.js        Building: build(ctx) creates blocks and furniture; setup(app) defines dynamic behavior (optional)
 assets/           Images (project screenshots, skins, icons)
-engine/           Engine (keep when customizing the site; replace entirely when upgrading)
+engine/           Shared engine (use the official updater; preserve local customizations)
 examples/terry-home/   Showcase home: reference implementation for buildings, furniture, landscaping, and pets
 backend/mailbox/  Optional: Cloudflare Worker that forwards guestbook messages to email
 tools/            serve.py (local preview), check.mjs (self-check), build.sh (build & deploy)
@@ -51,6 +54,15 @@ npm install && npm run check    # Install dependencies and run site + browser ch
 - Appending `?debug` to the URL displays draw calls, triangle count, and frame time at the top of the page; values exceeding the budget are highlighted in red.
 - When `check:site` reports a missing tagline or logo, ask the user to provide them. For engine diffs in the check report, only revert engine changes unrelated to the current task and keep changes the user already had. `engine/manifest.json` is only updated by maintainers at release time.
 - Local frame time only reflects the current machine's performance. Before publishing, ask the user to check the actual experience on their phone. See [docs/deploy.md](docs/deploy.md) for deployment steps.
+
+<!-- homecraft-updates:start -->
+## Homecraft Engine Updates
+
+- Follow [engine/UPDATING.md](engine/UPDATING.md) when asked to upgrade Homecraft or apply upstream fixes. Use releases from `terryHu7/homecraft`, not the fork's own releases.
+- When diagnosing a shared engine issue, check once for a relevant fix in the latest stable release. Report relevant updates without changing project files. Do not repeat notices for an unchanged release or apply unrelated upgrades.
+- Use the official updater. Preserve site layouts, content, configuration, assets, deployment files, and existing project rules. Resolve reported conflicts with the supplied files and continuation command.
+- Inspect the diff, test, and redeploy through the existing hosting setup. Directory listing does not update deployed code.
+<!-- homecraft-updates:end -->
 
 The browser console provides the following debug APIs:
 

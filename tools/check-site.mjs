@@ -85,7 +85,7 @@ if (manifest?.files) {
   const now = engineFiles(), changed = [];
   for (const [file, hash] of Object.entries(manifest.files)) if (now[file] !== hash) changed.push(now[file] ? `changed ${file}` : `missing ${file}`);
   for (const file of Object.keys(now)) if (!manifest.files[file]) changed.push(`added ${file}`);
-  if (changed.length) warnings.push(`engine/ differs from Homecraft ${manifest.version}: ${changed.slice(0, 6).join(', ')}${changed.length > 6 ? `, and ${changed.length - 6} more` : ''}. Unless the owner asked for an engine change, put these files back (upgrading means replacing all of engine/)`);
+  if (changed.length) warnings.push(`engine/ differs from Homecraft ${manifest.version}: ${changed.slice(0, 6).join(', ')}${changed.length > 6 ? `, and ${changed.length - 6} more` : ''}. Preserve intentional local changes; follow engine/UPDATING.md for official updates instead of overwriting customized files`);
 }
 
 const where = relative(process.cwd(), site) || '.';

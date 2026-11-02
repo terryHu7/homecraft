@@ -31,6 +31,7 @@ async function main() {
   }
   run('node', ['--test', 'tools/listing-github.test.mjs', 'tools/listing-validation.test.mjs']);
   if (!mode.browser) return;
+  run('node', ['--test', 'tools/update-engine.test.mjs']);
   run('node', ['tools/check-site.mjs']);
   run('node', ['tools/check-metadata.mjs']);
   run('node', ['--test', 'tools/check-listing.test.mjs']);
@@ -43,6 +44,7 @@ async function main() {
     }
     if (!ready) throw Error('Preview server did not start');
     run('node', ['tools/check-portal.mjs', 'http://127.0.0.1:4173']);
+    run('node', ['tools/check-mailbox-ui.cjs', 'http://127.0.0.1:4173']);
     run('node', ['tools/check-listing.mjs', '--url', 'http://127.0.0.1:4173/']);
   } finally { server.kill(); }
 }
