@@ -21,7 +21,9 @@ test('template logo is a warning while connectivity remains required',async()=>{
   const broken=await inspectEntry(entry,{...good,inspectPortal:async()=>({status:'fail',views:[{code:'private_directory'}]})});assert.equal(broken.status,'changes');assert(broken.issues[0].includes('portal.directory'));
 });
 test('temporary network failures require review without a configuration accusation',async()=>{
-  const report=await inspectEntry(entry,{...good,reachable:async()=>false});assert.equal(report.status,'review');assert.equal(report.issues.length,0);
+  const down={reachable:async()=>false,inspectLogo:async()=>({status:'review'}),inspectPortal:async()=>({status:'review',views:[{code:'page'}]})};
+  const report=await inspectEntry(entry,{...good,...down});
+  assert.equal(report.status,'review');assert.equal(report.issues.length,0);assert.equal(report.review.length,1);
 });
 test('settings and preview URLs cannot bypass the directory schema',()=>{
   assert(validateSettings({blocked:'https://example.com/'}).length);assert(validateSettings({join:'javascript:alert(1)'}).length);

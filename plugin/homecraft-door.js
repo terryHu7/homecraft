@@ -144,7 +144,9 @@ class HomecraftDoor extends HTMLElement {
     const cached = directory.peek(), initial = worlds(zh, cached, !!cached);
     this.#paint(body, say, initial);
     const revision = ++this.#revision;
-    const result = worlds(zh, await directory.read());
+    let raw = await directory.read();
+    if (!raw) raw = await directory.read(true);
+    const result = worlds(zh, raw);
     if (revision !== this.#revision || !this.isConnected) return;
     if (JSON.stringify(result) !== JSON.stringify(initial)) this.#paint(body, say, result);
   }

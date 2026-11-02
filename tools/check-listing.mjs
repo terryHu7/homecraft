@@ -38,12 +38,14 @@ export async function inspectEntry(entry, options = {}) {
     (options.reachable || reachable)(entry.url), (options.inspectLogo || inspectLogo)(entry.logo),
     (options.inspectPortal || inspectPortal)(entry.url, options),
   ]);
-  if (!up) review.push(copy.network);
-  if (logo.status === 'review') review.push(copy.logoNetwork);
-  if (logo.status === 'fail') issues.push(fieldMessage('logo: invalid image'));
-  if (logo.template) warnings.push(copy.templateLogo);
-  if (portal.status === 'fail') issues.push(portalMessage(portal));
-  if (portal.status === 'review') review.push(portalMessage(portal));
+  if (!up) review.push(copy.network(entry.url));
+  else {
+    if (logo.status === 'review') review.push(copy.logoNetwork(entry.logo));
+    if (logo.status === 'fail') issues.push(fieldMessage('logo: invalid image'));
+    if (logo.template) warnings.push(copy.templateLogo);
+    if (portal.status === 'fail') issues.push(portalMessage(portal));
+    if (portal.status === 'review') review.push(portalMessage(portal));
+  }
   return { entry, issues, review, warnings, portal, status: issues.length ? 'changes' : review.length ? 'review' : 'pass' };
 }
 export async function inspectRequest(body, options = {}) {

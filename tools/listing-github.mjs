@@ -89,8 +89,10 @@ export async function applyRequest({ github, context, report, expected, core }) 
   if (!report || report.hash !== requestHash(issue.body)) report = { status: 'review', issues: [], review: [copy.review], warnings: [] };
   if (report.status !== 'pass' || problems(report.entry).length) {
     if (oldPR) await api.status(oldPR.head.sha, 'Listing request', 'failure', issue.html_url);
-    const messages = [...(report.issues || []), ...(report.review || []), ...(report.warnings || [])];
-    await api.comment(issue.number, [report.status === 'changes' ? copy.changes : copy.review, ...messages].join('\n\n'));
+    const messages = [...new Set([...(report.issues || []), ...(report.review || [])])];
+    const summary = messages.length
+      ? messages.map(message => `- ${message.replaceAll('\n', '\n  ')}`).join('\n') : copy.review;
+    await api.comment(issue.number, `${summary}\n\n${copy.retry}`);
     return { status: report.status === 'changes' ? 'changes' : 'review' };
   }
 
@@ -137,7 +139,7 @@ export async function applyRequest({ github, context, report, expected, core }) 
   }
   await api.status(commit.sha, 'PR title', validTitle(title) ? 'success' : 'failure', pr.html_url);
   await api.status(commit.sha, 'Listing request', 'success', issue.html_url);
-  await api.comment(issue.number, [copy.ready(pr.number), copy.approval, ...(report.warnings || [])].join('\n\n'),
+  await api.comment(issue.number, copy.ready(pr.number),
     { state: 'review', pr: pr.number, hash: fingerprint(entry), url: entry.url });
   core?.setOutput('pr', pr.number);
   return { status: 'ready', pr: pr.number };

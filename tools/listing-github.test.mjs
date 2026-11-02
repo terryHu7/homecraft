@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { prepareRequest, applyRequest, reviewPolicy, notifyPublication, fingerprint, allowedEvent, validTitle, listingState, MARK } from './listing-github.mjs';
 import { requestHash } from './check-listing.mjs';
+import { copy, fieldMessage, portalMessage } from './listing-copy.mjs';
 import { classify } from './pr-check.mjs';
 import { sameDirectory, verifyPublication } from './verify-publication.mjs';
 
@@ -43,6 +44,30 @@ test('invalid edits cannot leave the previously successful PR mergeable', async(
 test('inspection failures produce review feedback and block an existing PR', async()=>{
   const f=fixture();f.report=null;assert.equal((await applyRequest(f)).status,'review');
   assert(f.calls.some(([type,s])=>type==='status'&&s.state==='failure'));
+});
+test('issue feedback lists each blocking problem once with one retry instruction',async()=>{
+  const f=fixture();
+  const logo=fieldMessage('logo: invalid image');
+  const portal=portalMessage({status:'fail',views:[{code:'private_directory'}]});
+  Object.assign(f.report,{status:'changes',issues:[logo,logo,portal],review:[copy.logoNetwork],warnings:[copy.templateLogo]});
+  assert.equal((await applyRequest(f)).status,'changes');
+  const body=f.comments[0].body;
+  assert.equal(body.split(logo.replaceAll('\n','\n  ')).length-1,1);
+  assert.equal(body.split(copy.retry).length-1,1);
+  assert(body.includes(`- ${copy.logoNetwork.replaceAll('\n','\n  ')}`));
+  assert(body.includes('\n  ```js\n  portal: {'));
+  assert(!body.includes(copy.templateLogo));
+  assert(!body.includes(copy.approval));
+  assert(!f.calls.some(([type])=>type==='updateRef'));
+});
+test('successful issue feedback keeps maintainer instructions and suggestions in the PR',async()=>{
+  const f=fixture({hasPR:false});f.report.warnings=[copy.templateLogo];
+  assert.equal((await applyRequest(f)).status,'ready');
+  const pr=f.calls.find(([type])=>type==='createPR')[1];
+  assert(pr.body.includes(copy.approval));
+  assert(pr.body.includes(copy.templateLogo));
+  const body=f.comments[0].body;
+  assert.equal(body.split('\n').filter(line=>!line.startsWith('<!--')).join('\n'),copy.ready(5));
 });
 test('a late result cannot overwrite a subsequently edited issue', async()=>{
   const f=fixture();f.issue.body='a new request';assert.equal((await applyRequest(f)).status,'stale');assert.equal(f.calls.length,0);

@@ -69,7 +69,9 @@ export function createWorldList({ onChoose }) {
     const { ready, ...initial } = initialWorlds();
     host.dataset.loaded = String(ready);
     paint(initial, !ready);
-    const result = await getWorlds(force);
+    let result = await getWorlds(force);
+    // The startup fetch can lose to a busy first frame. Opening the list tries once more.
+    if (result.missed && !force && ticket === revision && root === host) result = await getWorlds(true);
     if (ticket !== revision || root !== host) return;
     host.dataset.loaded = 'true';
     if (!ready || JSON.stringify(result) !== JSON.stringify(initial)) paint(result);
