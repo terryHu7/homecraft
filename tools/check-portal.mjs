@@ -20,7 +20,7 @@ const views = [
   { name: 'phone', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   { name: 'reduced', viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' },
 ];
-const DIRECTORY = ['https://homecraft.terryhu.cn/worlds.json', 'https://terryhu7.github.io/homecraft/worlds.json'];
+const DIRECTORY = ['https://terryhu7.github.io/homecraft/worlds.json'];
 try {
   for (const { name, ...view } of views) {
     const context = await browser.newContext({ ...view, locale: 'zh-CN' });

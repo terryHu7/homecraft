@@ -8,7 +8,9 @@ Public site details live in `homecraft.json` beside the home page; its fields an
 
 ## 1. Public Directory
 
-Portals read the same directory from `https://homecraft.terryhu.cn/worlds.json` and `https://terryhu7.github.io/homecraft/worlds.json`, using the first valid answer. A slow mirror does not delay a working one. The directory is generated from `directory/` in the main repository. See the [public directory](worlds.md) for listing instructions.
+Portals read the shared directory from `https://terryhu7.github.io/homecraft/worlds.json`. The directory is generated from `directory/` in the main repository. See the [public directory](worlds.md) for listing instructions.
+
+传送门从 `https://terryhu7.github.io/homecraft/worlds.json` 读取公共目录。目录由主仓库的 `directory/` 生成，收录步骤见[公共目录](worlds.md)。
 
 Data example:
 

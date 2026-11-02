@@ -16,7 +16,7 @@ export const copy = {
   portalReview: pair('自动检查未能确认传送门互通，等待维护者复查。', 'The automated check could not verify portal compatibility. Maintainer review is required.'),
   prBody: pair('已检查公共目录、跨站跳转、返回和角色传递，使用中英文浏览器语言及桌面、手机尺寸。合并前请审核网站内容和提交资料。', 'Public directory access, cross-site navigation, return navigation and character transfer were checked with Chinese and English browser languages at desktop and mobile sizes. Review the website content and submitted details before merging.'),
 };
-export const portalConfig = "```js\nportal: {\n  directory: [\n    'https://homecraft.terryhu.cn/worlds.json',\n    'https://terryhu7.github.io/homecraft/worlds.json'\n  ]\n}\n```";
+export const portalConfig = "```js\nportal: {\n  directory: [\n    'https://terryhu7.github.io/homecraft/worlds.json'\n  ]\n}\n```";
 export function portalMessage(report) {
   if (report.status === 'pass') return '';
   if (report.views.some(v => v.code === 'private_directory')) return `${copy.portalConfig}\n\n${portalConfig}`;
