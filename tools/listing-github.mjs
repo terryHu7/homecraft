@@ -139,6 +139,7 @@ export async function applyRequest({ github, context, report, expected, core }) 
   await api.status(commit.sha, 'Listing request', 'success', issue.html_url);
   await api.comment(issue.number, [copy.ready(pr.number), copy.approval, ...(report.warnings || [])].join('\n\n'),
     { state: 'review', pr: pr.number, hash: fingerprint(entry), url: entry.url });
+  await github.rest.actions.createWorkflowDispatch({ ...repo, workflow_id: 'checks.yml', ref: head });
   core?.setOutput('pr', pr.number);
   return { status: 'ready', pr: pr.number };
 }

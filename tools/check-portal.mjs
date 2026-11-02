@@ -188,6 +188,9 @@ try {
     assert.equal(await forged.locator('#portalReturn').count(), 0);
     assert.equal(await forged.evaluate(() => __home.worn.carried), false);
     assert.equal(new URL(forged.url()).hash, '');
+    await forged.close();
+    const stats = await page.evaluate(() => __home.stats());
+    await page.close();
     // An ordinary blog with the door plugin (once): no Return on a direct
     // visit, into a world, and back out of the world's door to the blog,
     // whose Return chip carries the traveller on.
@@ -219,7 +222,7 @@ try {
       await page2.close();
     }
     assert.deepEqual(errors, []);
-    console.log(`PASS ${name}: portal click, one-click entry, walk-through, startup progress, carried skin, keyboard return, Back/Forward, empty/error/blocked, stale request, scrolling, forged link${name === 'computer' ? ', blog plugin' : ''}; ${JSON.stringify(await page.evaluate(() => __home.stats()))}`);
+    console.log(`PASS ${name}: portal click, one-click entry, walk-through, startup progress, carried skin, keyboard return, Back/Forward, empty/error/blocked, stale request, scrolling, forged link${name === 'computer' ? ', blog plugin' : ''}; ${JSON.stringify(stats)}`);
     await context.close();
   }
 } finally { await browser.close(); }
