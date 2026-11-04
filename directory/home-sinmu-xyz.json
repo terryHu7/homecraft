@@ -1,0 +1,19 @@
+{
+  "name": {
+    "zh": "极目的家",
+    "en": "Jimu's Home"
+  },
+  "url": "https://home.sinmu.xyz/",
+  "owner": "sinmu",
+  "lang": [
+    "zh",
+    "en"
+  ],
+  "homecraft": true,
+  "added": "2026-11-04",
+  "intro": {
+    "zh": "自动化工程师的方块小屋，书房里放着我的全部文章",
+    "en": "An automation engineer's blocky little home, with all my writings in the study."
+  },
+  "logo": "https://home.sinmu.xyz/assets/favicon.png"
+}
