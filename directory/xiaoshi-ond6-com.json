@@ -1,0 +1,16 @@
+{
+  "name": {
+    "zh": "开发者小石的家",
+    "en": "XiaoShiHome"
+  },
+  "url": "https://xiaoshi.ond6.com/",
+  "owner": "开发者小石",
+  "lang": [
+    "zh",
+    "en"
+  ],
+  "homecraft": true,
+  "added": "2026-11-06",
+  "intro": "十年程序员、支付系统架构师的三维小院，欢迎来坐坐、喝喝茶。",
+  "logo": "https://xiaoshi.ond6.com/assets/favicon.png"
+}
