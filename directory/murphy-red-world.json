@@ -1,16 +1,13 @@
 {
-  "name": {
-    "zh": "murphy的世界",
-    "en": "murphy"
-  },
+  "name": "Murphy的世界",
   "url": "https://www.murphy.red/world",
-  "owner": "murphy",
+  "owner": "Murphy",
   "lang": [
     "zh",
     "en"
   ],
   "homecraft": true,
   "added": "2026-11-06",
-  "intro": "欢迎大佬游玩",
-  "logo": "https://www.murphy.red/pixel-home/assets/favicon.svg"
+  "intro": "Murphy 的像素小世界：逛工程岛、漫游西湖，聊聊 Java、AI 和正在折腾的有趣项目。",
+  "logo": "https://www.murphy.red/favicon.svg"
 }
