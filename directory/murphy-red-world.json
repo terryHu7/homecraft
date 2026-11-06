@@ -1,0 +1,16 @@
+{
+  "name": {
+    "zh": "murphy的世界",
+    "en": "murphy"
+  },
+  "url": "https://www.murphy.red/world",
+  "owner": "murphy",
+  "lang": [
+    "zh",
+    "en"
+  ],
+  "homecraft": true,
+  "added": "2026-11-06",
+  "intro": "欢迎大佬游玩",
+  "logo": "https://www.murphy.red/pixel-home/assets/favicon.svg"
+}
