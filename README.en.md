@@ -38,7 +38,7 @@ For future updates, see the [update guide](engine/UPDATING.md).
 
 ## Portal [🔗 Request listing](https://github.com/terryHu7/homecraft/issues/new/choose)
 
-<p align="center"><img src="docs/images/portal-en.webp" width="640" alt="Portal"></p>
+<p align="center"><img src="https://terryhu.cn/share/homecraft-portal-en.webp" width="640" alt="Portal"></p>
 
 The portal lists personal websites and lets visitors travel between them, much like links between blogs.
 

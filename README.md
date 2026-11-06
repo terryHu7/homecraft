@@ -38,7 +38,7 @@ Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 
 ## 传送门 [🔗 申请收录](https://github.com/terryHu7/homecraft/issues/new/choose)
 
-<p align="center"><img src="docs/images/portal.webp" width="640" alt="传送门"></p>
+<p align="center"><img src="https://terryhu.cn/share/homecraft-portal.webp" width="640" alt="传送门"></p>
 
 类似传统博客的友链，传送门列表收录了大家的个人网站，方便互相"串门"。
 
