@@ -21,9 +21,17 @@ const views = [
   { name: 'reduced', viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' },
 ];
 const DIRECTORY = ['https://terryhu7.github.io/homecraft/worlds.json'];
+let context;
+const closeContext = async () => {
+  const current = context;
+  context = null;
+  if (!current) return;
+  try { await current.unrouteAll({ behavior: 'ignoreErrors' }); }
+  finally { await current.close(); }
+};
 try {
   for (const { name, ...view } of views) {
-    const context = await browser.newContext({ ...view, locale: 'zh-CN' });
+    context = await browser.newContext({ ...view, locale: 'zh-CN' });
     const page = await context.newPage(), errors = [];
     const uncached = async target => { await (await context.newCDPSession(target)).send('Network.setCacheDisabled', { cacheDisabled: true }); };
     await uncached(page);
@@ -235,6 +243,9 @@ try {
     assert.deepEqual(errors, []);
     const stats = recordedStats || await page.evaluate(() => __home.stats());
     console.log(`PASS ${name}: portal click, one-click entry, walk-through, startup progress, carried skin, keyboard return, Back/Forward, empty/error/blocked, stale request, scrolling, forged link${name === 'computer' ? ', blog plugin' : ''}; ${JSON.stringify(stats)}`);
-    await context.close();
+    await closeContext();
   }
+} catch (error) {
+  await closeContext().catch(() => {});
+  throw error;
 } finally { await browser.close(); }
