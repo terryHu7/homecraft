@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { problems, keyOf, slugFor, isBlocked } from './directory.mjs';
 import { requestHash } from './check-listing.mjs';
 import { copy, listingTitle, statusText } from './listing-copy.mjs';
+import { contributorAuthor, addContributor, readContributors, contributorFiles } from './listing-contributors.mjs';
 
 export const MARK = '<!-- homecraft-join -->';
 const STATE = /<!-- homecraft-state (\{[^\n]+\}) -->/;
@@ -110,13 +111,19 @@ export async function applyRequest({ github, context, report, expected, core }) 
   for (let n = 2; !same && entries.some(e => e.path === `directory/${slug}.json`); n++) slug = `${slugFor(entry.url).slice(0, 36)}-${n}`;
   const path = `directory/${slug}.json`, head = `join/${issue.number}`;
   const title = listingTitle(entry, !!same), content = JSON.stringify(entry, null, 2) + '\n';
+  const author = contributorAuthor(issue.user);
+  const records = addContributor(await readContributors(github, repo, branch.commit.sha), issue.user, { url: entry.url, issue: issue.number });
+  const credits = contributorFiles(records, repo);
   const { data: baseCommit } = await github.rest.git.getCommit({ ...repo, commit_sha: branch.commit.sha });
   const { data: tree } = await github.rest.git.createTree({ ...repo, base_tree: baseCommit.tree.sha,
-    tree: [{ path, mode: '100644', type: 'blob', content }] });
+    tree: [{ path, mode: '100644', type: 'blob', content }, ...credits] });
   const previous = oldPR ? (await github.rest.git.getCommit({ ...repo, commit_sha: oldPR.head.sha })).data : null;
-  const commit = previous?.tree.sha === tree.sha && previous.parents?.[0]?.sha === branch.commit.sha
+  const commit = previous?.tree.sha === tree.sha && previous.parents?.[0]?.sha === branch.commit.sha &&
+      previous.author?.name === author.name && previous.author?.email === author.email && previous.message === title
     ? { sha: oldPR.head.sha }
-    : (await github.rest.git.createCommit({ ...repo, message: title, tree: tree.sha, parents: [branch.commit.sha] })).data;
+    : (await github.rest.git.createCommit({ ...repo, message: title, author, tree: tree.sha, parents: [branch.commit.sha] })).data;
+  const { data: linked } = await github.rest.repos.getCommit({ ...repo, ref: commit.sha });
+  if (linked.author?.id !== issue.user.id) throw Error('GitHub did not associate the listing commit with the applicant account. Review the commit email before merging.');
 
   // Recheck after remote reads so an obsolete result cannot replace a newer request.
   const { data: current } = await github.rest.issues.get({ ...repo, issue_number: issue.number });
@@ -128,7 +135,7 @@ export async function applyRequest({ github, context, report, expected, core }) 
   }
   await github.rest.git.updateRef({ ...repo, ref: `heads/${head}`, sha: commit.sha, force: true });
   const source = `<!-- homecraft-request ${issue.number} ${report.hash} -->`;
-  const body = [source, `Closes #${issue.number}`, copy.prBody, copy.approval, '```json', content.trimEnd(), '```', ...(report.warnings || [])].join('\n\n');
+  const body = [source, `Closes #${issue.number}`, copy.prBody, copy.approval, copy.contributor(issue.user.login), '```json', content.trimEnd(), '```', ...(report.warnings || [])].join('\n\n');
   const { data: pr } = oldPR
     ? await github.rest.pulls.update({ ...repo, pull_number: oldPR.number, title, body })
     : await github.rest.pulls.create({ ...repo, head, base, title, body });
@@ -166,11 +173,23 @@ export async function reviewPolicy({ github, context }) {
   if (state?.state === 'checking') { await api.status(pr.head.sha, 'Listing request', 'pending', issue.html_url); return; }
   const files = await github.paginate(github.rest.pulls.listFiles, { ...context.repo, pull_number: pr.number });
   let matches = false;
-  if (state?.state === 'review' && state.pr === pr.number && files.length === 1 && /^directory\/[a-z0-9][a-z0-9-]{0,40}\.json$/.test(files[0].filename)) {
-    const { data } = await github.rest.repos.getContent({ ...context.repo, path: files[0].filename, ref: pr.head.sha });
+  const listing = files.find(file => /^directory\/[a-z0-9][a-z0-9-]{0,40}\.json$/.test(file.filename));
+  if (state?.state === 'review' && state.pr === pr.number && listing && files.every(file => !file.previous_filename) && [1, 3].includes(files.length)) {
+    const { data } = await github.rest.repos.getContent({ ...context.repo, path: listing.filename, ref: pr.head.sha });
     try {
       const entry = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8'));
-      matches = !problems(entry).length && fingerprint(entry) === state.hash;
+      const records = addContributor(await readContributors(github, context.repo, pr.base.sha), issue.user, { url: entry.url, issue: issue.number });
+      const expected = contributorFiles(records, context.repo);
+      let creditsMatch = files.every(file => file.filename === listing.filename || expected.some(item => item.path === file.filename));
+      for (const item of expected) {
+        const { data } = await github.rest.repos.getContent({ ...context.repo, path: item.path, ref: pr.head.sha });
+        creditsMatch &&= Buffer.from(data.content, 'base64').toString('utf8') === item.content;
+      }
+      const commits = await github.paginate(github.rest.pulls.listCommits, { ...context.repo, pull_number: pr.number });
+      const author = contributorAuthor(issue.user);
+      matches = !problems(entry).length && fingerprint(entry) === state.hash && creditsMatch && commits.length === 1 &&
+        commits[0].author?.id === issue.user.id && commits[0].commit.author.email === author.email &&
+        commits[0].commit.message === pr.title && commits[0].parents.length === 1 && commits[0].parents[0].sha === pr.base.sha;
     } catch {}
   }
   await api.status(pr.head.sha, 'Listing request', matches ? 'success' : 'failure', issue.html_url);

@@ -10,6 +10,8 @@ The directory connects independently deployed websites through Homecraft portals
 4. The bot checks the details and portal, then creates a PR for review. You do not need to submit another PR. If changes are needed, edit the same issue or reply after redeploying to run the checks again.
 5. After the PR is merged and the published directory is verified, the bot updates the issue with the publication result.
 
+The bot credits the GitHub account that opened the accepted request as the commit author and adds a source-linked acknowledgment to [Community Contributors](../CONTRIBUTORS.md). Maintainers use **Rebase and merge** to retain that authorship. GitHub calculates the native Contributors list from qualifying commits on the default branch; its statistics may take time to refresh and have display limits.
+
 You may also submit a PR directly. Add one JSON file to directory/, using [terry.json](../directory/terry.json) as a reference. Include name, url, owner, lang, intro, logo and homecraft: true. Keep other changes in separate PRs. Use a title such as `chore(directory): add Example`.
 
 ## Updates and removal
