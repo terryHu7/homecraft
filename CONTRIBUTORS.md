@@ -19,4 +19,5 @@ This list records reviewed submissions, including websites that later become una
 | [@skk0](https://github.com/skk0) | [www.murphy.red/world](https://www.murphy.red/world) | [#34](https://github.com/terryHu7/homecraft/issues/34) |
 | [@terryHu7](https://github.com/terryHu7) | [terryhu.cn/](https://terryhu.cn/) | [8a8e101](https://github.com/terryHu7/homecraft/commit/8a8e101600f7d7b76231d7e9815fc60aa017d842) |
 | [@Vita0519](https://github.com/Vita0519) | [home.aihot.kdns.fr/](https://home.aihot.kdns.fr/) | [#4](https://github.com/terryHu7/homecraft/issues/4) |
+| [@xiaoshidebug](https://github.com/xiaoshidebug) | [xiaoshi.ond6.com/](https://xiaoshi.ond6.com/) | [#41](https://github.com/terryHu7/homecraft/issues/41) |
 | [@zjl4616](https://github.com/zjl4616) | [zhaur.com/](https://zhaur.com/) | [#5](https://github.com/terryHu7/homecraft/issues/5) |
