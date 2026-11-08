@@ -1,0 +1,14 @@
+{
+  "name": "404 KIDS SEE GHOSTS",
+  "url": "https://kidsseeghosts.art/",
+  "owner": "404KSG",
+  "lang": ["zh", "en"],
+  "intro": {
+    "zh": "一个来自未来的时间旅行者",
+    "en": "A TIME TRAVELER FROM THE FUTURE"
+  },
+  "logo": "https://kidsseeghosts.art/assets/site-logo.png",
+  "preview": "https://kidsseeghosts.art/assets/og-home-d535cfb42087.jpg",
+  "homecraft": true,
+  "added": "2026-11-08"
+}
