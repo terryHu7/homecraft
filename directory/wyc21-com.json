@@ -1,0 +1,16 @@
+{
+  "name": "Wyc的小岛",
+  "url": "https://www.wyc21.com/",
+  "owner": "wyc",
+  "lang": [
+    "zh",
+    "en"
+  ],
+  "homecraft": true,
+  "added": "2026-11-08",
+  "intro": {
+    "zh": "我和我的家乡",
+    "en": "My People, My Homeland"
+  },
+  "logo": "https://www.wyc21.com/assets/favicon.png"
+}
