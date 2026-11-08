@@ -42,4 +42,8 @@ Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 
 类似传统博客的友链，传送门列表收录了大家的个人网站，方便互相"串门"。
 
+扫码加入 homecraft 共建群:
+
+<p align="center"><img src="docs/images/wechat-group.jpg" width="280" alt="Homecraft 微信共建群"></p>
+
 ## 友情链接 [🔗 LINUX DO](https://linux.do)
