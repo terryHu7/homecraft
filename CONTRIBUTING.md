@@ -14,4 +14,6 @@ See the [public directory](docs/worlds.md) for the [Request listing](https://git
 
 Keep each PR focused on one change. Use an English title in the form `type(scope): description`; retain website names in their original language. Types: feat, fix, perf, docs, test, refactor, build, ci, chore, revert. For listings, use `chore(directory): add Example`, `update Example` or `remove Example`. Submit listing data separately from code and workflow changes.
 
-Describe the change and validation in concise English. Write technical documentation, Agent and skill instructions, workflow descriptions, and release notes in English. Public forms and bot replies provide complete English and Chinese text, with English first. Maintainers use Squash and merge with the PR title as the final commit title; intermediate commits do not need to be rewritten just for formatting.
+Describe the change and validation in concise English. Write technical documentation, Agent and skill instructions, workflow descriptions, and release notes in English. Public forms and bot replies provide complete English and Chinese text, with English first.
+
+Wait for PR title, Listing request and Checks to pass before merging. Use Squash and merge with the PR title for normal changes. Use Rebase and merge for listing PRs and listing-contributor backfills to preserve applicant authorship; keep one commit per listing or acknowledged applicant. Verify the published result before reporting completion.
