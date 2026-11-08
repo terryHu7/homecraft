@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { LEDGER, CREDITS } from './listing-contributors.mjs';
 
 export async function resolveCheckBase({ github, context }) {
   if (context.eventName === 'pull_request') return context.payload.pull_request.base.sha;
@@ -14,7 +15,8 @@ export async function resolveCheckBase({ github, context }) {
 
 export function classify(paths) {
   const entries = paths.filter(p => /^directory\/(?!_)[^/]+\.json$/.test(p));
-  if (entries.length && (entries.length !== 1 || paths.length !== 1)) throw Error('A listing PR must change one directory JSON file. Submit other changes separately.');
+  if (entries.length && (entries.length !== 1 || paths.some(path => path !== entries[0] && ![LEDGER, CREDITS].includes(path)) ||
+      paths.includes(LEDGER) !== paths.includes(CREDITS))) throw Error('A listing PR must change one directory JSON file, optionally with its contributor ledger and generated credits. Submit other changes separately.');
   return { listing: entries[0] || null, browser: paths.some(p => /^(engine\/|plugin\/|world\/|examples\/|tools\/|\.github\/workflows\/|home\.config\.js$|index\.html$|package)/.test(p)) };
 }
 const run = (command, args) => execFileSync(command, args, { stdio: 'inherit' });
@@ -24,6 +26,8 @@ async function main() {
   const mode = classify(paths);
   run('node', ['tools/directory.mjs', 'check']);
   run('node', ['tools/sync-protocol.mjs', '--check']);
+  run('node', ['tools/listing-contributors.mjs']);
+  run('node', ['--test', 'tools/listing-contributors.test.mjs']);
   if (mode.listing) {
     const added = execFileSync('git', ['diff', '--name-only', '--diff-filter=AM', base, 'HEAD', '--', mode.listing], { encoding: 'utf8' }).trim();
     if (added) run('node', ['tools/directory.mjs', 'check', '--online', '--portal', mode.listing]);

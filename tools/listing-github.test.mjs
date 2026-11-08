@@ -5,23 +5,26 @@ import { requestHash } from './check-listing.mjs';
 import { copy, fieldMessage, portalMessage } from './listing-copy.mjs';
 import { classify, resolveCheckBase } from './pr-check.mjs';
 import { sameDirectory, verifyPublication } from './verify-publication.mjs';
+import { LEDGER, CREDITS, addContributor, contributorAuthor, contributorFiles } from './listing-contributors.mjs';
 
 const entry = {name:'Example',url:'https://example.com/',owner:'Alex',lang:'en',intro:'Hello',logo:'https://example.com/logo.png',homecraft:true,added:'2026-11-01'};
 function fixture({ hasPR = true, listed = false } = {}) {
   const calls = [], comments = [];
-  const issue = {number:4,body:'original form',state:'open',labels:[{name:'join'}],user:{login:'alex'},html_url:'https://github.com/o/r/issues/4'};
-  let pr = hasPR ? {number:5,user:{login:'github-actions[bot]'},head:{sha:'old-head',ref:'join/4',repo:{full_name:'o/r'}},base:{sha:'base'},html_url:'https://github.com/o/r/pull/5',body:`<!-- homecraft-request 4 ${requestHash(issue.body)} -->`} : null;
+  const issue = {number:4,body:'original form',state:'open',labels:[{name:'join'}],user:{login:'alex',id:123,type:'User'},html_url:'https://github.com/o/r/issues/4'};
+  let pr = hasPR ? {number:5,title:'chore(directory): add Example',user:{login:'github-actions[bot]'},head:{sha:'old-head',ref:'join/4',repo:{full_name:'o/r'}},base:{sha:'base'},html_url:'https://github.com/o/r/pull/5',body:`<!-- homecraft-request 4 ${requestHash(issue.body)} -->`} : null;
+  const credits = contributorFiles(addContributor([],issue.user,{url:entry.url,issue:4}),{owner:'o',repo:'r'});
   const response = data => Promise.resolve({data});
   const github = {paginate:async (method, args) => (await method(args)).data,rest:{
     actions:{createWorkflowDispatch:async args=>calls.push(['dispatch',args])},
     issues:{get:async()=>({data:structuredClone(issue)}),listForRepo:()=>response([issue]),listComments:()=>response(comments),
       createComment:async args=>{calls.push(['comment',args.body]);comments.push({id:1,user:{login:'github-actions[bot]'},body:args.body});},
       updateComment:async args=>{calls.push(['comment',args.body]);comments.find(c=>c.id===args.comment_id).body=args.body;}},
-    pulls:{list:()=>response(pr?[pr]:[]),get:()=>response(pr),listFiles:()=>response([{filename:'directory/example-com.json'}]),
+    pulls:{list:()=>response(pr?[pr]:[]),get:()=>response(pr),listFiles:()=>response([{filename:'directory/example-com.json'},{filename:LEDGER},{filename:CREDITS}]),
+      listCommits:()=>response([{author:{id:123},commit:{author:contributorAuthor(issue.user),message:pr.title},parents:[{sha:'base'}]}]),
       update:async args=>{calls.push(['updatePR',args]);Object.assign(pr,args);return {data:pr};},
       create:async args=>{calls.push(['createPR',args]);pr={number:5,html_url:'https://github.com/o/r/pull/5',...args};return {data:pr};}},
-    repos:{getBranch:()=>response({commit:{sha:'base'}}),
-      getContent:args=>response(args.path==='directory'?listed?[{name:'example-com.json',path:'directory/example-com.json'}]:[]:{content:Buffer.from(JSON.stringify(entry)).toString('base64')}),
+    repos:{getBranch:()=>response({commit:{sha:'base'}}),getCommit:()=>response({author:{id:123}}),
+      getContent:args=>response(args.path==='directory'?listed?[{name:'example-com.json',path:'directory/example-com.json'}]:[]:{content:Buffer.from(args.path===LEDGER&&args.ref==='base'?'[]\n':credits.find(item=>item.path===args.path)?.content||JSON.stringify(entry)).toString('base64')}),
       createCommitStatus:async args=>calls.push(['status',args])},
     git:{getCommit:()=>response({tree:{sha:'base-tree'}}),createTree:async args=>{calls.push(['tree',args]);return {data:{sha:'tree'}};},
       createCommit:async args=>{calls.push(['commit',args]);return {data:{sha:'new-head'}};},
@@ -83,14 +86,32 @@ test('third-party and bot replies cannot trigger a recheck',()=>{
   assert(!allowedEvent(event,'issue_comment'));event.comment.user.login='alex';assert(allowedEvent(event,'issue_comment'));
   event.sender.type='Bot';assert(!allowedEvent(event,'issue_comment'));
 });
-test('one accepted request creates one data file and a standardized PR',async()=>{
+test('one accepted request credits the applicant in one commit with the listing and generated acknowledgments',async()=>{
   const f=fixture({hasPR:false});assert.equal((await applyRequest(f)).status,'ready');
-  const tree=f.calls.find(([t])=>t==='tree')[1];assert.equal(tree.tree.length,1);assert.equal(tree.tree[0].path,'directory/example-com.json');
+  const tree=f.calls.find(([t])=>t==='tree')[1];assert.equal(tree.tree.length,3);assert.equal(tree.tree[0].path,'directory/example-com.json');
   assert.equal(JSON.parse(tree.tree[0].content).url,entry.url);
+  assert.deepEqual(f.calls.find(([t])=>t==='commit')[1].author,{name:'alex',email:'123+alex@users.noreply.github.com'});
+  assert.equal(JSON.parse(tree.tree.find(file=>file.path===LEDGER).content)[0].id,123);
+  assert(tree.tree.find(file=>file.path===CREDITS).content.includes('https://github.com/alex'));
   const pr=f.calls.find(([t])=>t==='createPR')[1];assert.equal(pr.title,'chore(directory): add Example');assert(pr.body.includes('Closes #4'));
+  assert(pr.body.includes('Rebase and merge'));
   assert(f.calls.some(([t,s])=>t==='status'&&s.context==='Listing request'&&s.sha==='new-head'&&s.state==='success'));
   assert.deepEqual(f.calls.find(([t])=>t==='dispatch')[1],{owner:'o',repo:'r',workflow_id:'checks.yml',ref:'join/4'});
   assert.equal(f.calls.at(-1)[0],'dispatch');
+});
+test('unlinked commit authors cannot publish a listing branch or successful status',async()=>{
+  const f=fixture({hasPR:false});f.github.rest.repos.getCommit=async()=>({data:{author:null}});
+  await assert.rejects(applyRequest(f),/did not associate/);
+  assert(!f.calls.some(([type])=>['createPR','updateRef','dispatch'].includes(type)));
+});
+test('a matching old bot commit is replaced when its author attribution is wrong',async()=>{
+  const f=fixture();f.github.rest.git.getCommit=async()=>({data:{tree:{sha:'tree'},parents:[{sha:'base'}],author:{name:'bot',email:'bot@example.com'},message:'chore(directory): add Example'}});
+  await applyRequest(f);assert(f.calls.some(([type])=>type==='commit'));
+});
+test('a correctly attributed unchanged request branch reuses its existing single commit',async()=>{
+  const f=fixture();f.github.rest.git.getCommit=async()=>({data:{tree:{sha:'tree'},parents:[{sha:'base'}],author:contributorAuthor(f.issue.user),message:'chore(directory): add Example'}});
+  await applyRequest(f);assert(!f.calls.some(([type])=>type==='commit'));
+  assert.equal(f.calls.find(([type])=>type==='updateRef')[1].sha,'old-head');
 });
 test('rechecking updates the same PR and the same comment',async()=>{
   const f=fixture();await applyRequest(f);await applyRequest(f);
@@ -127,11 +148,40 @@ test('updating a branch preserves verified data but not a pending recheck',async
   assert(f.calls.some(([t,s])=>t==='status'&&s.context==='Listing request'&&s.state==='pending'));
   assert(!f.calls.some(([t,s])=>t==='status'&&s.context==='Listing request'&&s.state==='success'));
 });
+test('listing policy rejects altered credits, unrelated files and additional or misattributed commits',async()=>{
+  for(const change of ['credits','files','author','commits','message','parent']){
+    const f=fixture();f.comments.push({id:1,user:{login:'github-actions[bot]'},body:`${MARK}\n<!-- homecraft-state ${JSON.stringify({state:'review',pr:5,hash:fingerprint(entry)})} -->`});
+    if(change==='credits'){
+      const get=f.github.rest.repos.getContent;
+      f.github.rest.repos.getContent=args=>args.path===CREDITS?Promise.resolve({data:{content:Buffer.from('tampered').toString('base64')}}):get(args);
+    } else if(change==='files') f.github.rest.pulls.listFiles=async()=>({data:[{filename:'directory/example-com.json'},{filename:LEDGER},{filename:'engine/input.js'}]});
+    else {
+      const commits=(await f.github.rest.pulls.listCommits()).data;
+      if(change==='author') commits[0].author.id=456;
+      if(change==='commits') commits.push(structuredClone(commits[0]));
+      if(change==='message') commits[0].commit.message='chore(directory): add Example\n\nUnexpected trailer';
+      if(change==='parent') commits[0].parents[0].sha='unreviewed-parent';
+      f.github.rest.pulls.listCommits=async()=>({data:commits});
+    }
+    await reviewPolicy(f);
+    assert(f.calls.some(([type,status])=>type==='status'&&status.context==='Listing request'&&status.state==='failure'),change);
+  }
+});
+test('later listing updates can retain unchanged acknowledgments with a one-file diff',async()=>{
+  const f=fixture();f.comments.push({id:1,user:{login:'github-actions[bot]'},body:`${MARK}\n<!-- homecraft-state ${JSON.stringify({state:'review',pr:5,hash:fingerprint(entry)})} -->`});
+  const get=f.github.rest.repos.getContent;
+  f.github.rest.repos.getContent=args=>get(args.path===LEDGER?{...args,ref:'old-head'}:args);
+  f.github.rest.pulls.listFiles=async()=>({data:[{filename:'directory/example-com.json'}]});
+  await reviewPolicy(f);
+  assert(f.calls.some(([type,status])=>type==='status'&&status.context==='Listing request'&&status.state==='success'));
+});
 test('title and change scope checks cover normal and adversarial input',()=>{
   assert(validTitle('chore(directory): add 西西和北'));assert(validTitle('fix(input): handle movement keys'));
   assert(!validTitle('Add a site'));assert(!validTitle('fix: one\nsecond line'));
   assert.throws(()=>classify(['directory/a.json','engine/input.js']));
   assert.throws(()=>classify(['directory/a.json','directory/b.json']));
+  assert.throws(()=>classify(['directory/a.json',LEDGER]));
+  assert.equal(classify(['directory/a.json',LEDGER,CREDITS]).listing,'directory/a.json');
   assert.equal(classify(['directory/a.json']).listing,'directory/a.json');assert.equal(classify(['docs/worlds.md']).browser,false);
 });
 test('publication reports success only when reviewed data is in the verified directory',async()=>{

@@ -43,3 +43,7 @@ For future updates, see the [update guide](engine/UPDATING.md).
 The portal lists personal websites and lets visitors travel between them, much like links between blogs.
 
 ## Links [🔗 LINUX DO](https://linux.do)
+
+## Community Contributors
+
+[View contributors and their accepted portal submissions](CONTRIBUTORS.md).

@@ -17,6 +17,7 @@ export const copy = {
   review: pair('自动检查超时，可直接回复重试，或等待人工审核。', '⏳ Automated check timed out. Reply to retry, or wait for manual review.'),
   ready: number => pair(`检查通过！已生成 PR #${number}，等待审核合并。`, `🚀 Checks passed! PR #${number} is ready for review.`),
   approval: pair('如果 PR 提示需要批准工作流，请点击 `Approve workflows to run`。所有检查通过后再合并。', 'If workflow approval is required, select `Approve workflows to run`. Merge after all checks pass.'),
+  contributor: login => pair(`此提交署名为申请人 @${login}。请使用 \`Rebase and merge\` 保留 GitHub 贡献归属；不要使用 Squash。`, `This commit credits the applicant @${login}. Use \`Rebase and merge\` to preserve GitHub contributor attribution; do not squash it.`),
   published: pair('恭喜！网站已成功收录，传送门列表已更新。', '🎉 Congrats! Your website is listed and the portal list is updated.'),
   unpublished: pair('PR 已合并，正在同步到传送门...', '⏳ PR merged. Syncing to the portal...'),
   unchanged: pair('传送门列表中已有相同资料，无需更新。', 'The portal list already matches this submission. No update is needed.'),

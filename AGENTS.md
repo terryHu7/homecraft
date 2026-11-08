@@ -12,7 +12,7 @@ Homecraft is a Minecraft-style 3D personal website template. The project uses Th
 - Write technical documentation, Agent and skill instructions, workflow descriptions, release notes, PR descriptions, and CLI output in English. Use concise, professional language and describe concrete behavior. Avoid metaphors, colloquialisms, and promotional phrasing.
 - Public forms and bot replies use English first, followed by Chinese. Keep both complete and use consistent product terms.
 - Changes to public wording require the maintainer's confirmation before publication, including generated issue replies and PR descriptions. Prepare the exact text for review.
-- Wait for PR title, Listing request and Checks to pass before merging. Use Squash and merge with the PR title. Verify the published result before reporting completion.
+- Wait for PR title, Listing request and Checks to pass before merging. Use Squash and merge with the PR title for normal changes. Use Rebase and merge for listing PRs and listing-contributor backfills to preserve applicant authorship; keep one commit per listing or acknowledged applicant. Verify the published result before reporting completion.
 
 ## Development Principles
 
