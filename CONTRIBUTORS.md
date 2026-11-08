@@ -9,6 +9,7 @@ This list records reviewed submissions, including websites that later become una
 | GitHub account | Website | Source |
 | --- | --- | --- |
 | [@bjrzs](https://github.com/bjrzs) | [heikeji.com/](https://heikeji.com/) | [#7](https://github.com/terryHu7/homecraft/issues/7) |
+| [@CoderXiaoShi](https://github.com/CoderXiaoShi) | [xinglong.tech/](https://xinglong.tech/) | [#24](https://github.com/terryHu7/homecraft/issues/24) |
 | [@liuyaboixixi](https://github.com/liuyaboixixi) | [home.m.1game.fun:4443/](https://home.m.1game.fun:4443/) | [#10](https://github.com/terryHu7/homecraft/issues/10) |
 | [@myogg](https://github.com/myogg) | [m.134688.xyz/](https://m.134688.xyz/) | [#15](https://github.com/terryHu7/homecraft/issues/15) |
 | [@rech3421](https://github.com/rech3421) | [rsliyu.com/](https://rsliyu.com/) | [#1](https://github.com/terryHu7/homecraft/issues/1) |
