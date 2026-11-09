@@ -1,7 +1,7 @@
 // Public metadata must fail quietly without trusting HTML, redirects or size.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { metadataURL, readSiteInfo } from '../engine/door-metadata.js';
+import { metadataURL, readSiteInfo, normalizeDoors } from '../engine/door-metadata.js';
 const server = createServer((req, res) => {
   const kind = req.url.split('/')[1];
   res.setHeader('Content-Type', 'application/json');
@@ -18,6 +18,8 @@ const server = createServer((req, res) => {
   if (kind === 'long') { data.name = 'a'.repeat(100); data.intro = 'b'.repeat(200); }
   if (kind === 'legacy') { data.avatar = data.logo; delete data.logo; }
   if (kind === 'alias') data.url = 'https://canonical.example/home/';
+  if (kind === 'doors') data.doors = ['https://b.example/', 'https://b.example/', 'javascript:alert(1)', 'https://a.example/home/index.html', 'https://c.example/?from=x'];
+  if (kind === 'bad-doors') data.doors = 'https://b.example/';
   res.end(JSON.stringify(data));
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -35,5 +37,15 @@ try {
   const long = await readSiteInfo(`${base}/long/`); assert.equal(long.name.length, 60); assert.equal(long.intro.length, 120);
   assert.equal((await readSiteInfo(`${base}/legacy/`)).logo, `${base}/legacy/logo.png`);
   assert.equal((await readSiteInfo(`${base}/alias/`)).url, 'https://canonical.example/home/');
-  console.log('PASS metadata: subfolders, bilingual text, empty intro, bounded fields/body/time, bad data, unsafe URLs, redirects, legacy logo and public alias');
+  // doors: URLs validated against the door protocol, de-duplicated by world
+  // identity, the site itself dropped. The href keeps its path as published;
+  // identity folding (…/index.html) only affects the key.
+  const doors = (await readSiteInfo(`${base}/doors/`)).doors;
+  assert.deepEqual(doors, ['https://b.example/', 'https://a.example/home/index.html', 'https://c.example/']);
+  assert.deepEqual(normalizeDoors('x', 'https://self.example/'), [], 'doors must be an array');
+  assert.deepEqual(normalizeDoors(['https://self.example/'], 'https://self.example/'), [], 'the site itself is dropped');
+  // A subpath is a different world identity (origin + pathname), so it stays.
+  assert.deepEqual(normalizeDoors(['https://self.example/sub/'], 'https://self.example/'), ['https://self.example/sub/']);
+  assert.equal((await readSiteInfo(`${base}/bad-doors/`)).doors.length, 0);
+  console.log('PASS metadata: subfolders, bilingual text, empty intro, bounded fields/body/time, bad data, unsafe URLs, redirects, legacy logo, public alias and door list');
 } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }

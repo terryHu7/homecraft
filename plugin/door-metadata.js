@@ -1,5 +1,6 @@
 // Public world metadata. Read the same filename and fields on every site;
 // never infer a description from page content. Works in browsers and Node.
+import { worldURL, worldKey } from './door-protocol.js';
 const cache = new Map();
 export const siteText = value => {
   const zh = (globalThis.document?.documentElement.lang || globalThis.navigator?.language || 'en').startsWith('zh');
@@ -19,6 +20,27 @@ const words = (value, max) => {
   if (typeof value === 'string') return value.replace(/\s+/g, ' ').trim().slice(0, max);
   if (!value || typeof value !== 'object' || Array.isArray(value)) return '';
   return Object.fromEntries(['zh', 'en'].filter(k => typeof value[k] === 'string').map(k => [k, words(value[k], max)]));
+};
+// The optional `doors` field (v1 protocol addition): the destinations of the
+// site's one-way door rings, published so other worlds can draw the
+// relationship graph without visiting. A plain array of URLs, capped and
+// de-duplicated by the same world identity the portal uses; the site itself is
+// dropped. Malformed entries are ignored, not fatal.
+export function normalizeDoors(raw, self) {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set(), out = [];
+  const selfUrl = self ? worldURL(self, self) : null;
+  const selfKey = selfUrl ? worldKey(selfUrl) : null;
+  for (const item of raw) {
+    const url = worldURL(item, self || undefined);
+    if (!url) continue;
+    const key = worldKey(url);
+    if (!key || key === selfKey || seen.has(key)) continue;
+    seen.add(key);
+    out.push(url.href);
+    if (out.length >= 16) break;
+  }
+  return out;
 };
 // `wait` is how long the site gets, in ms: a portal can't keep a visitor
 // waiting, a directory check can.
@@ -55,6 +77,7 @@ export function readSiteInfo(address, wait = 1800) {
         intro: words(data.intro, 120), logo: logo ? webURL(logo)?.href || '' : '',
         lang: (Array.isArray(data.lang) ? data.lang : [data.lang]).filter(l => l === 'zh' || l === 'en'),
         homecraft: data.homecraft === true,
+        doors: normalizeDoors(data.doors, url.href),
       };
     } catch { return null; }
     finally { clearTimeout(timer); if (reader) void reader.cancel().catch(() => {}); abort.abort(); }

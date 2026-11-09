@@ -6,7 +6,7 @@ const siteName = value => typeof value === 'string' ? value.replace(/\s+/g, ' ')
 export const sourceLabel = (name, url) => siteName(name) || (() => { const u = worldURL(url); return u ? u.host + u.pathname.replace(/\/$/, '') : ''; })();
 const MAX_BYTES = MAX_SKIN * 3 / 4;
 const PNG = [137, 80, 78, 71, 13, 10, 26, 10];
-export function worldURL(value, base = location.href) {
+export function worldURL(value, base = globalThis.location?.href) {
   try {
     if (!value || typeof value !== 'string') return null;
     const url = new URL(value, base);
@@ -15,8 +15,8 @@ export function worldURL(value, base = location.href) {
     return url;
   } catch { return null; }
 }
-export const worldKey = value => {
-  const url = worldURL(value);
+export const worldKey = (value, base = globalThis.location?.href) => {
+  const url = value instanceof URL ? value : worldURL(value, base);
   return url ? url.origin + url.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '') : null;
 };
 const encode = bytes => {

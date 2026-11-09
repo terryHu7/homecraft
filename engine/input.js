@@ -50,7 +50,8 @@ export function createInput(canvas, handlers) {
     if (!e.repeat) {
       if (!movement) {
         if (k === 'f' || k === 'e' || k === 'enter') handlers.interact?.();
-        else if (k === 'm' || k === 'tab') { e.preventDefault(); handlers.map?.(); }
+        else if (k === 'm') { e.preventDefault(); handlers.map?.(); }
+        else if (k === 'tab') { e.preventDefault(); handlers.bigMap?.(); }
         else if (k === 'v') handlers.view?.();
         else if (k === 'p') handlers.phone?.();
       }

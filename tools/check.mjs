@@ -39,6 +39,18 @@ let failed = false;
 for (const view of VIEWS) {
   const context = await browser.newContext(view);
   const page = await context.newPage();
+  // Door signs and map lists may pull remote logos; answer cross-origin image
+  // requests with a local stand-in so the check stays hermetic and quiet (a
+  // missing CORS header on a real logo would otherwise fail the run).
+  const origin = new URL(url).origin;
+  const standIn = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#7aa653"/><rect x="10" y="10" width="44" height="44" fill="#4a3d2e"/></svg>');
+  await context.route('**/*', route => {
+    const request = route.request();
+    if (request.resourceType() !== 'image') return route.fallback();
+    if (new URL(request.url()).origin === origin) return route.fallback();
+    return route.fulfill({ status: 200, contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': '*' }, body: standIn });
+  });
   const errors = [];
   let bytes = 0;
   page.on('pageerror', e => errors.push(e.message));
