@@ -15,6 +15,9 @@ rm -rf "$out" && mkdir -p "$out"
 for item in index.html _headers home.config.js homecraft.json world assets engine vendor; do
   [ -e "$root/$item" ] && cp -R "$root/$item" "$out/"
 done
+# The multiplayer client rides along (its room server is deployed from the
+# repo, never shipped inside the site build).
+if [ -d "$root/multiplayer/client" ]; then mkdir -p "$out/multiplayer" && cp -R "$root/multiplayer/client" "$out/multiplayer/"; fi
 find "$out" -name .DS_Store -delete
 
 # Minify every module that isn't minified already (three.js ships .min.js). The
