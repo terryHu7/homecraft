@@ -337,8 +337,7 @@ export function createWorldMap({ root, onChoose }) {
   canvas.addEventListener('pointermove', e => {
     // The hover legend only tracks a free pointer, never a drag.
     if (!pointers.size && view) {
-      const w = toWorld(e.clientX, e.clientY);
-      const node = nodeAt(w.x, w.z);
+      const node = nodeAt(e.clientX, e.clientY);
       if (node) { showCard(node); moveCard(e); canvas.style.cursor = 'pointer'; }
       else { hideCard(); canvas.style.cursor = ''; }
     }
@@ -359,10 +358,15 @@ export function createWorldMap({ root, onChoose }) {
       if (pan.moved) { view.userMoved = true; view.cx -= dx * dpr / view.scale; view.cz -= dy * dpr / view.scale; pan.x = e.clientX; pan.y = e.clientY; schedule(); }
     }
   });
-  function nodeAt(x, z) {
+  // Hit-test in screen pixels against the drawn circle, so the whole badge
+  // responds at any zoom level.
+  function nodeAt(clientX, clientY) {
+    const r = canvas.getBoundingClientRect();
+    const px = (clientX - r.left) * dpr, py = (clientY - r.top) * dpr;
     for (const node of nodes.values()) {
-      const r = (node.source === 'directory' ? 22 : 30) + 4;
-      if (Math.hypot(x - node.x, z - node.z) <= r) return node;
+      const [X, Z] = P(node.x, node.z);
+      const rad = ((node.source === 'directory' ? 22 : 30) + 6) * dpr;
+      if (Math.hypot(px - X, py - Z) <= rad) return node;
     }
     return null;
   }
@@ -372,8 +376,7 @@ export function createWorldMap({ root, onChoose }) {
     if (pan && pointers.size === 0) {
       // A plain click (no drag) on a node leaves for it right away.
       if (!pan.moved) {
-        const w = toWorld(e.clientX, e.clientY);
-        const node = nodeAt(w.x, w.z);
+        const node = nodeAt(e.clientX, e.clientY);
         if (node) {
           close();
           onChoose({ url: node.url, name: node.name, homecraft: true, preview: null });
