@@ -22,8 +22,32 @@ const script = `
 
 (async () => {
   const browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome', headless: true });
+  const handoff = 'location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(`${data.message}\\n\\n${data.contact}`)}`;';
+  const isolated = 'window.__mailboxMailtos.push({ url: `mailto:${EMAIL}?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(`${data.message}\\n\\n${data.contact}`)}`, isolated: true });';
+  async function mailtoNavigations(page) {
+    const attempts = await page.evaluate(() => window.__mailboxMailtos);
+    assert(Array.isArray(attempts), 'Mailto isolation was not installed');
+    return attempts;
+  }
+  function assertMailto(attempt, subject, body) {
+    assert.equal(attempt.isolated, true, 'Mailto handoff was not isolated');
+    const parsed = new URL(attempt.url);
+    assert.equal(parsed.pathname, 'public@example.test');
+    assert.equal(parsed.searchParams.get('subject'), subject);
+    assert.equal(parsed.searchParams.get('body'), body);
+  }
   async function configuredPage({ legacy = false, emailOnly = false, ...options } = {}) {
     const page = await browser.newPage(options);
+    await page.addInitScript(() => { window.__mailboxMailtos = []; });
+    // Chrome does not reliably expose external protocol handoffs through the
+    // Navigation API. Replace only the final assignment in the served module;
+    // form handling, validation, subject generation and URL encoding stay real.
+    await page.route('**/engine/ui/mailbox.js', async route => {
+      const response = await route.fetch();
+      const source = await response.text();
+      assert(source.includes(handoff), 'Mailbox handoff changed; update the isolated test seam');
+      await route.fulfill({ response, body: source.replace(handoff, isolated) });
+    });
     if (legacy) {
       const html = execFileSync('git', ['show', '8a8e101:index.html'], { encoding: 'utf8' });
       await page.route(url => url.origin === new URL(base).origin && url.pathname === '/', route =>
@@ -64,6 +88,7 @@ const script = `
     await contact.fill('visitor@example.com');
     await send.click();
     assert.equal(requests.length, 0, 'Empty subject reached API');
+    assert.deepEqual(await mailtoNavigations(page), []);
     await subject.fill('   ');
     await send.click();
     assert.match(await form.locator('.mailbox-status').innerText(), /单行主题/);
@@ -79,6 +104,7 @@ const script = `
     await note.fill('很喜欢这个网站');
     await send.click();
     assert.equal(requests.length, 0, 'Empty contact reached API');
+    assert.deepEqual(await mailtoNavigations(page), []);
     await contact.fill('   ');
     await send.click();
     assert.match(await form.locator('.mailbox-status').innerText(), /填写联系方式/);
@@ -94,6 +120,7 @@ const script = `
     await contact.fill(' 微信：visitor ');
     await send.click();
     assert.equal(requests.length, 0, 'Missing verification reached API');
+    assert.deepEqual(await mailtoNavigations(page), []);
     await page.evaluate(() => window.__mailboxTest.pass());
     await send.click();
     await page.waitForFunction(() => window.__mailboxTest.resets === 1);
@@ -112,6 +139,7 @@ const script = `
     await send.click();
     await page.waitForFunction(() => document.querySelector('#panel .mailbox').classList.contains('is-sent'));
     assert.equal(requests.length, 2);
+    assert.deepEqual(await mailtoNavigations(page), []);
     await page.locator('#panel .close').click();
     await page.waitForFunction(() => window.__mailboxTest.widgets.size === 0);
     await page.evaluate(() => window.__home.go('mailbox'));
@@ -197,11 +225,13 @@ const script = `
       await form.waitFor({ state: 'visible' });
       assert.equal(await form.locator('[name="subject"]').count(), 0);
       const message = 'Legacy note 🚀\nSecond line';
+      const expectedSubject = [...message.replace(/\n/g, ' ')].slice(0, 24).join('');
       await form.locator('[name="contact"]').fill('visitor@example.com');
       await form.locator('textarea').fill('   ');
       await form.locator('button[type="submit"]').click();
       assert.match(await form.locator('.mailbox-status').innerText(), /Please write a note/);
       assert.equal(deliveries.length, 0);
+      assert.deepEqual(await mailtoNavigations(legacy), []);
       await form.locator('textarea').fill(message);
       if (!emailOnly) {
         await legacy.waitForFunction(() => window.__mailboxTest?.widgets.size === 1);
@@ -211,14 +241,46 @@ const script = `
       if (emailOnly) {
         await form.locator('.mailbox-status').getByText('Opened your mail app', { exact: true }).waitFor();
         assert.equal(deliveries.length, 0);
+        const navigations = await mailtoNavigations(legacy);
+        assert.equal(navigations.length, 1);
+        assertMailto(navigations[0], expectedSubject, `${message}\n\nvisitor@example.com`);
       } else {
         await legacy.waitForFunction(() => document.querySelector(`${document.body.classList.contains('plain') ? '#pages' : '#panel'} form.mailbox`)?.classList.contains('is-sent'));
         assert.equal(deliveries.length, 1);
-        assert.equal(deliveries[0].subject, [...message.replace(/\n/g, ' ')].slice(0, 24).join(''));
+        assert.equal(deliveries[0].subject, expectedSubject);
+        assert.deepEqual(await mailtoNavigations(legacy), []);
       }
       assert.deepEqual(errors, []);
       await legacy.close();
     }
-    console.log('PASS: bilingual mailbox; required subject/contact; token retry/cleanup; 390/320px; no-JS; initial fork HTML with new engine (modal/plain, mail app/Worker); no real email sent');
+
+    // Current HTML keeps its explicit subject in the mail-app fallback.
+    for (const plain of [false, true]) {
+      const page = await configuredPage({ emailOnly: true, viewport: { width: plain ? 390 : 1280, height: 844 }, isMobile: plain, hasTouch: plain });
+      const errors = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.goto(`${base}/?${plain ? 'plain&' : ''}lang=en${plain ? '#mailbox' : ''}`);
+      if (!plain) {
+        await page.waitForFunction(() => window.__home);
+        await page.evaluate(() => window.__home.go('mailbox'));
+      }
+      const form = page.locator(`${plain ? '#pages' : '#panel'} form.mailbox`);
+      const message = 'Current note 🚀\nSecond line';
+      await form.locator('[name="subject"]').fill('   ');
+      await form.locator('textarea').fill(message);
+      await form.locator('[name="contact"]').fill('visitor@example.com');
+      await form.locator('button[type="submit"]').click();
+      assert.match(await form.locator('.mailbox-status').innerText(), /single-line subject/);
+      assert.deepEqual(await mailtoNavigations(page), []);
+      await form.locator('[name="subject"]').fill('Current feedback');
+      await form.locator('button[type="submit"]').click();
+      await form.locator('.mailbox-status').getByText('Opened your mail app', { exact: true }).waitFor();
+      const navigations = await mailtoNavigations(page);
+      assert.equal(navigations.length, 1);
+      assertMailto(navigations[0], 'Current feedback', `${message}\n\nvisitor@example.com`);
+      assert.deepEqual(errors, []);
+      await page.close();
+    }
+    console.log('PASS: bilingual mailbox; required subject/contact; token retry/cleanup; 390/320px; no-JS; initial fork and current HTML with new engine (modal/plain, mail app/Worker); no real email sent');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
