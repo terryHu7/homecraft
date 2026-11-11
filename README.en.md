@@ -10,7 +10,7 @@ Inspired by Minecraft, The Matrix and the metaverse, I used AI to turn my person
 
 You can explore it freely. I've built a basketball court, a gym and a workbench, and added a day–night cycle and a weather system.
 
-You can also embed regular web pages and open them by pressing F. The block-based graphics keep rendering demands low, so the site works on phones too.
+You can also embed regular web pages and open them by pressing F. The block-based graphics keep rendering demands low, so the site works on phones too. Press P or tap the phone's Camera app to open the Photo Studio: pick 16:9/9:16/1:1 ratios, fine-tune lighting and weather, frame a Watch Dogs-style selfie, and export crisp screenshots to share.
 
 Exploring the site feels like visiting a friend's home. Compared with a traditional website, it may be a more memorable way to get to know someone.
 

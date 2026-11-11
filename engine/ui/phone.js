@@ -19,6 +19,7 @@ const LOOKS = {
   github: { tile: '#24292f', img: app('github') },
   blog: { tile: '#e08a3c', glyph: 'scroll' },
   mail: { tile: '#3b72d6', glyph: 'mail' },
+  camera: { tile: '#2c2c2e', glyph: 'camera' },
   bilibili: { tile: '#fb7299', word: 'B站' },
   xiaohongshu: { tile: '#ff2442', word: '小红书' },
   weibo: { tile: '#e6162d', word: '微博' },
@@ -47,9 +48,10 @@ function tile(app) {
 }
 
 // accounts: [{ id, name, href, handle, note }]. write opens the site's own
-// mailbox page, offered on the mail card beside the plain mailto link.
+// mailbox page, offered on the mail card beside the plain mailto link;
+// photo opens the camera studio GTA/Watch-Dogs style.
 // setAccounts takes them again, named in the other language.
-export function createPhone(root, accounts = [], { write } = {}) {
+export function createPhone(root, accounts = [], { write, photo } = {}) {
   root.setAttribute('role', 'region');
   root.innerHTML = `<div class="screen">
     <i class="island"></i>
@@ -83,7 +85,11 @@ export function createPhone(root, accounts = [], { write } = {}) {
     card.querySelector('.back').setAttribute('aria-label', t('返回主屏幕', 'Back to Home Screen'));
     root.querySelector('.bar').setAttribute('aria-label', t('回到主屏幕', 'Home Screen'));
     card.querySelector('.write').textContent = t('留言', 'Mailbox');
-    root.querySelector('.apps').innerHTML = accounts.map((a, i) => `<button type="button" class="app" data-i="${i}">${tile(a)}<span>${escape(a.name)}</span></button>`).join('');
+    const items = accounts.map((a, i) => `<button type="button" class="app" data-i="${i}">${tile(a)}<span>${escape(a.name)}</span></button>`);
+    if (photo) {
+      items.push(`<button type="button" class="app" data-app="camera">${tile({ id: 'camera', name: t('相机', 'Camera') })}<span>${t('相机', 'Camera')}</span></button>`);
+    }
+    root.querySelector('.apps').innerHTML = items.join('');
     if (up) tick();
   }
 
@@ -122,7 +128,13 @@ export function createPhone(root, accounts = [], { write } = {}) {
   }
   root.querySelector('.apps').addEventListener('click', e => {
     const b = e.target.closest('.app');
-    if (b) open(Number(b.dataset.i));
+    if (!b) return;
+    if (b.dataset.app === 'camera') {
+      toggle(false);
+      photo?.();
+      return;
+    }
+    open(Number(b.dataset.i));
   });
   card.querySelector('.back').addEventListener('click', back);
   card.querySelector('.write').addEventListener('click', () => write?.());

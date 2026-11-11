@@ -3,6 +3,8 @@
 import { FACE as DEFAULT_FACE, SPRITE } from '../world/skin.js';
 import { drawDoor } from '../door-controls.js';
 
+const HOMECRAFT_LOGO_URL = new URL('../assets/homecraft-logo-32.png', import.meta.url).href;
+
 const PALETTE = {
   k: '#1d1d1f', w: '#ffffff', g: '#c6c6c6', G: '#6b6b6b', b: '#9c6b3f', B: '#5c3a1b', t: '#c89b62',
   o: '#e07a2e', O: '#a8501c', y: '#f2c94c', Y: '#b8862a', r: '#d23c3c', R: '#8c2222', c: '#4fb3e0', C: '#2b6c9e',
@@ -654,6 +656,14 @@ function head() {
 const cache = {};
 export function icon(name) {
   if (cache[name]) return cache[name];
+  if (name === 'logo') {
+    const canvas = Object.assign(document.createElement('canvas'), { width: 32, height: 32 });
+    const img = new Image();
+    img.onload = () => canvas.getContext('2d').drawImage(img, 0, 0, 32, 32);
+    img.src = HOMECRAFT_LOGO_URL;
+    cache.logo = { canvas, url: HOMECRAFT_LOGO_URL };
+    return cache.logo;
+  }
   let canvas;
   if (name === 'portal') {
     canvas = Object.assign(document.createElement('canvas'), { width: 16, height: 16 });
