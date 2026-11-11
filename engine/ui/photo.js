@@ -51,9 +51,9 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
       const isPortrait = ratio === '9:16' || (ratio === '1:1' && innerHeight > innerWidth);
       const px = player.pos.x, py = player.y, pz = player.pos.z;
       const h = player.heading; // player yaw orientation
-      const dist = isPortrait ? 2.4 : 3.0;
-      const side = isPortrait ? 0.2 : 0.62; // classic rule-of-thirds selfie framing
-      const lift = isPortrait ? 0.25 : 0.2; // elevated phone angle looking slightly down
+      const dist = isPortrait ? 1.85 : 2.45;
+      const side = isPortrait ? -0.25 : -0.40; // right-handed selfie hold angle (character's right is -x)
+      const lift = isPortrait ? 0.28 : 0.36; // elevated flattering selfie perspective
 
       // Forward vector facing player front (+z when heading=0)
       const forwardX = Math.sin(h);
@@ -62,12 +62,12 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
       const rightZ = -Math.sin(h);
 
       const camX = px + forwardX * dist + rightX * side;
-      const camY = py + 1.4 + lift;
+      const camY = py + 1.45 + lift;
       const camZ = pz + forwardZ * dist + rightZ * side;
 
-      // Focus on the player's chest/face
+      // Focus on the player's face/chest
       const lookX = px;
-      const lookY = py + 1.15;
+      const lookY = py + 1.38;
       const lookZ = pz;
 
       return { pos: [camX, camY, camZ], look: [lookX, lookY, lookZ] };

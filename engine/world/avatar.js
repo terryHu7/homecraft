@@ -194,13 +194,13 @@ export function createAvatar(skinUrl, { onFace } = {}) {
       reachT -= dt;
       if (reachArm === 'R') { target.armR = -2.95; target.armRz = -0.1; } else { target.armL = -2.95; target.armLz = 0.1; }
     }
-    // Holding the phone or raising arm for a selfie
+    // Holding the phone or extending arm for a handheld selfie
     if (selfie) {
-      target.armR = -1.42;
-      target.armRz = -0.38;
-      target.armRy = 0.28;
-      target.armL = 0.08;
-      target.armLz = -0.14;
+      target.armR = -1.56;
+      target.armRz = 0.22;
+      target.armRy = 0.38;
+      target.armL = 0.10;
+      target.armLz = 0.16;
     } else if (phoneOut) {
       target.armR = -1.2;
       target.armRz = 0.42;
@@ -229,13 +229,13 @@ export function createAvatar(skinUrl, { onFace } = {}) {
     }
     // The head looks where it is told, within a natural range. Swimming on
     // top, it lifts to look ahead over the water.
-    const headPitch = !w ? THREE.MathUtils.clamp(selfie ? -0.06 : (phoneOut ? 0.45 : s.lookPitch ?? 0), -0.5, 0.6)
+    const headPitch = !w ? THREE.MathUtils.clamp(selfie ? -0.10 : (phoneOut ? 0.45 : s.lookPitch ?? 0), -0.5, 0.6)
       : w.lie > 0.5 || w.dive ? 0 : w.surface ? (w.fast ? -0.2 : -THREE.MathUtils.clamp(w.pitch - 0.25, 0, 1.1)) : -0.35;
-    look.yaw += (THREE.MathUtils.clamp(selfie ? -0.1 : (s.lookYaw ?? 0), -1.1, 1.1) - look.yaw) * k * 0.6;
+    look.yaw += (THREE.MathUtils.clamp(selfie ? -0.14 : (s.lookYaw ?? 0), -1.1, 1.1) - look.yaw) * k * 0.6;
     look.pitch += (headPitch - look.pitch) * k * 0.6;
     head.rotation.y = look.yaw;
     head.rotation.x = look.pitch;
-    head.rotation.z = selfie ? 0.08 : 0;
+    head.rotation.z = selfie ? 0.06 : 0;
   }
 
   function wave() { waveT = 1.4; }
