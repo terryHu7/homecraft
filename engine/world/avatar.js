@@ -117,9 +117,9 @@ export function createAvatar(skinUrl, { onFace } = {}) {
   blob.renderOrder = 1;
 
   // Pose state, eased every frame.
-  const pose = { legR: 0, legL: 0, armR: 0, armL: 0, armRz: 0, armLz: 0, legRz: 0, legLz: 0, lean: 0 };
+  const pose = { legR: 0, legL: 0, armR: 0, armL: 0, armRy: 0, armRz: 0, armLz: 0, legRz: 0, legLz: 0, lean: 0 };
   const target = { ...pose };
-  let phase = 0, idleT = 0, waveT = 0, reachT = 0, reachArm = 'R', phoneOut = false, stroke = 0;
+  let phase = 0, idleT = 0, waveT = 0, reachT = 0, reachArm = 'R', phoneOut = false, selfie = false, stroke = 0;
   const look = { yaw: 0, pitch: 0 };
 
   // In the water: lying on the bottom, climbing out, diving in, treading
@@ -194,14 +194,27 @@ export function createAvatar(skinUrl, { onFace } = {}) {
       reachT -= dt;
       if (reachArm === 'R') { target.armR = -2.95; target.armRz = -0.1; } else { target.armL = -2.95; target.armLz = 0.1; }
     }
-    // Holding the phone: the right arm forward and in, the head bowed to it.
-    if (phoneOut) { target.armR = -1.2; target.armRz = 0.42; }
+    // Holding the phone or raising arm for a selfie
+    if (selfie) {
+      target.armR = -1.42;
+      target.armRz = -0.38;
+      target.armRy = 0.28;
+      target.armL = 0.08;
+      target.armLz = -0.14;
+    } else if (phoneOut) {
+      target.armR = -1.2;
+      target.armRz = 0.42;
+      target.armRy = 0;
+    } else {
+      target.armRy = 0;
+    }
     const k = 1 - Math.exp(-dt * 14);
     for (const key in pose) pose[key] += (target[key] - pose[key]) * k;
 
     legR.rotation.x = pose.legR; legL.rotation.x = pose.legL;
     legR.rotation.z = pose.legRz; legL.rotation.z = pose.legLz;
     armR.rotation.x = pose.armR; armL.rotation.x = pose.armL;
+    armR.rotation.y = pose.armRy;
     armR.rotation.z = pose.armRz; armL.rotation.z = pose.armLz;
     if (w) {
       // Pitched about the middle of the body, and rolled about its length to
@@ -216,19 +229,21 @@ export function createAvatar(skinUrl, { onFace } = {}) {
     }
     // The head looks where it is told, within a natural range. Swimming on
     // top, it lifts to look ahead over the water.
-    const headPitch = !w ? THREE.MathUtils.clamp(phoneOut ? 0.45 : s.lookPitch ?? 0, -0.5, 0.6)
+    const headPitch = !w ? THREE.MathUtils.clamp(selfie ? -0.06 : (phoneOut ? 0.45 : s.lookPitch ?? 0), -0.5, 0.6)
       : w.lie > 0.5 || w.dive ? 0 : w.surface ? (w.fast ? -0.2 : -THREE.MathUtils.clamp(w.pitch - 0.25, 0, 1.1)) : -0.35;
-    look.yaw += (THREE.MathUtils.clamp(s.lookYaw ?? 0, -1.1, 1.1) - look.yaw) * k * 0.6;
+    look.yaw += (THREE.MathUtils.clamp(selfie ? -0.1 : (s.lookYaw ?? 0), -1.1, 1.1) - look.yaw) * k * 0.6;
     look.pitch += (headPitch - look.pitch) * k * 0.6;
     head.rotation.y = look.yaw;
     head.rotation.x = look.pitch;
+    head.rotation.z = selfie ? 0.08 : 0;
   }
 
   function wave() { waveT = 1.4; }
   function reach(arm = 'R') { reachT = 0.75; reachArm = arm; }
-  function holdPhone(on) { phoneOut = on; handset.visible = on; }
+  function holdPhone(on) { phoneOut = on; handset.visible = on || selfie; }
+  function poseSelfie(on) { selfie = on; handset.visible = on || phoneOut; }
 
-  return { root, body, head, armR, armL, legR, legL, hand, blob, update, wave, reach, holdPhone, material };
+  return { root, body, head, armR, armL, legR, legL, hand, blob, update, wave, reach, holdPhone, poseSelfie, material };
 }
 
 // ---------- Pets ----------

@@ -1005,7 +1005,7 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 
 /* Live Viewfinder Watermark (所见即所得: in-viewfinder real-time match, micro and subtle) */
 .photo-live-watermark {
-  position: absolute; right: 12px; bottom: 12px;
+  position: absolute; right: 28px; bottom: 24px;
   display: inline-flex; align-items: center; gap: 4px;
   height: 20px; padding: 0 8px 0 5px;
   background: rgba(10, 12, 14, 0.72);

@@ -705,7 +705,7 @@ async function boot() {
   const photoButton = $('#photoButton');
   if (photoButton) photoButton.querySelector('span').style.backgroundImage = `url(${icon('camera').url})`;
   const photoStudio = createPhotoStudio({
-    stage, world, rig, player, sound, setTimeMode, getTimeMode: () => timeMode, setWeatherMode, getWeatherMode: () => weatherMode, config,
+    stage, world, rig, player, avatar, sound, setTimeMode, getTimeMode: () => timeMode, setWeatherMode, getWeatherMode: () => weatherMode, config,
   });
 
   // ---------- Flight ----------

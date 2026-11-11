@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import * as L from '@world/layout.js';
 import { t, onLang } from '../lang.js';
 
-export function createPhotoStudio({ stage, world, rig, player, sound, setTimeMode, getTimeMode, setWeatherMode, getWeatherMode, config }) {
+export function createPhotoStudio({ stage, world, rig, player, avatar = null, sound, setTimeMode, getTimeMode, setWeatherMode, getWeatherMode, config = {} }) {
   const root = document.getElementById('photoStudio');
   const trigger = document.getElementById('photoButton');
   if (!root || !trigger) return { open() {}, close() {}, isOpen: () => false };
@@ -152,6 +152,11 @@ export function createPhotoStudio({ stage, world, rig, player, sound, setTimeMod
       b.classList.toggle('on', active);
     }
     updateSceneCapsule();
+    if (id === 'selfie') {
+      avatar?.poseSelfie?.(true);
+    } else {
+      avatar?.poseSelfie?.(false);
+    }
     if (id === 'current') {
       rig.skipIntro?.();
       rig.recenter(player);
@@ -370,7 +375,7 @@ export function createPhotoStudio({ stage, world, rig, player, sound, setTimeMod
     const pillW = pad + iconSize + gap + textWidth + Math.round(pad * 1.5);
     const pillH = badgeH;
 
-    const margin = Math.round(Math.min(width, height) * 0.015);
+    const margin = Math.round(Math.min(width, height) * 0.024);
     const x = width - pillW - margin;
     const y = height - pillH - margin;
 
@@ -695,6 +700,7 @@ export function createPhotoStudio({ stage, world, rig, player, sound, setTimeMod
   function closeStudio() {
     if (!open) return;
     open = false;
+    avatar?.poseSelfie?.(false);
     closeAllPopovers();
     document.body.classList.remove('photo-mode');
     root.hidden = true;
