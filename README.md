@@ -46,31 +46,10 @@ Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 
 <p align="center"><img src="docs/images/wechat-group.jpg" width="280" alt="Homecraft 微信共建群"></p>
 
-## 支持与赞助
+## Buy Me a Coffee
 
-如果 Homecraft 对你有所帮助，或者你正在将其用于**商业展示 / 线上实体店**，欢迎赞助支持项目的持续开发！
-
-| 海外 / 国际 (Credit Card / Apple Pay) | 国内 (微信赞赏) |
-| :---: | :---: |
-| <a href="https://buymeacoffee.com/terryHu7" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="42"></a><br><br> *支持全球信用卡、Apple Pay、Google Pay* | <img src="docs/images/wechat-sponsor.svg" width="160" alt="微信赞赏码"><br> *(扫码请作者喝杯咖啡)* |
-
-> 🏢 **商业与企业用户**：如果你的公司或实体店需要场景定制、商业授权咨询或技术支持，欢迎通过 [GitHub Issues](https://github.com/terryHu7/homecraft/issues) 与我联系。赞助者将在下方以及官方 3D 虚拟空间中获得专属展示位。
-
-### 鸣谢名单 (Backers & Sponsors)
-
-感谢每一位支持 Homecraft 的朋友！☕️
-
-#### 🏢 商业与特约赞助商 (Sponsors)
-*赞助满 $20 / ¥150 即可在此展示店铺/品牌 Logo 与链接。*
-
-| 赞助商 | 线上实体店 / 品牌链接 |
-| :--- | :--- |
-| *(虚位以待)* | 欢迎支持并展示你的项目/线上实体店 |
-
-#### ☕️ 个人赞助 (Coffee Donors)
-
-| 日期 | 赞助者 | 渠道 | 寄语 |
-| :--- | :--- | :--- | :--- |
-| *(欢迎第一位赞助者)* | - | - | - |
+<p align="center">
+  <img src="docs/images/wechat-sponsor.webp" width="160" alt="微信赞赏码">
+</p>
 
 ## 友情链接 [🔗 LINUX DO](https://linux.do)

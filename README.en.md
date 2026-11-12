@@ -42,33 +42,12 @@ For future updates, see the [update guide](engine/UPDATING.md).
 
 The portal lists personal websites and lets visitors travel between them, much like links between blogs.
 
-## Support & Sponsors
-
-If Homecraft brings value to your work or you are using it for your **business / virtual store**, consider buying me a coffee to support continuous development!
+## Buy Me a Coffee
 
 <p align="center">
-  <a href="https://buymeacoffee.com/terryHu7" target="_blank">
-    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="48">
+  <a href="https://buymeacoffee.com/terryhu" target="_blank">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" width="180" alt="Buy Me A Coffee">
   </a>
 </p>
-
-> 🏢 **Commercial / Enterprise Use**: If you are using Homecraft for a commercial showroom or business showcase, please consider supporting the project. For custom 3D scenes, commercial licensing inquiries, or technical consulting, feel free to reach out via [GitHub Issues](https://github.com/terryHu7/homecraft/issues). Featured sponsors receive an official showcase in the virtual world and README.
-
-### Backers & Sponsors
-
-Thank you to everyone who supports Homecraft! ☕️
-
-#### 🏢 Corporate & Featured Sponsors
-*Sponsors contributing $20+ can display their brand logo and store link here.*
-
-| Sponsor | Showcase / Store Link |
-| :--- | :--- |
-| *(Open for sponsors)* | Welcome to support and showcase your virtual store |
-
-#### ☕️ Coffee Donors
-
-| Date | Supporter | Channel | Note |
-| :--- | :--- | :--- | :--- |
-| *(Be the first supporter)* | - | - | - |
 
 ## Links [🔗 LINUX DO](https://linux.do)
