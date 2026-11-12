@@ -254,21 +254,23 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     }
   }
 
-  // Draw authentic slender macOS window bar
-  function drawMacWindowBar(ctx, width, height, domainText) {
+  // Draw authentic slender macOS window bar (100% WYSIWYG proportional rendering)
+  function drawMacWindowBar(ctx, width, height, domainText, scale = 1) {
     // 1. Sleek macOS dark mode background
     ctx.fillStyle = '#2a2a2c';
     ctx.fillRect(0, 0, width, height);
 
     // Subtle bottom border
+    const borderH = Math.max(1, Math.round(1 * scale));
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.fillRect(0, height - 1, width, 1);
+    ctx.fillRect(0, height - borderH, width, borderH);
 
     // 2. Traffic light dots (Apple Retina colors & subtle border)
+    // On screen: left: 10px, dots: 7px diameter (r = 3.5px), gap: 5px
     const cy = Math.round(height / 2);
-    const r = Math.max(3.5, Math.round(height * 0.11));
-    const startX = Math.round(height * 0.42);
-    const gap = Math.round(height * 0.38);
+    const r = Math.max(3.5, Math.round(3.5 * scale));
+    const startX = Math.round(10 * scale) + r;
+    const gap = Math.round(5 * scale) + r * 2;
 
     const dots = [
       { fill: '#ff5f57', stroke: '#e0443e' },
@@ -281,27 +283,32 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fillStyle = dot.fill;
       ctx.fill();
-      ctx.lineWidth = 1;
+      ctx.lineWidth = Math.max(1, Math.round(0.6 * scale));
       ctx.strokeStyle = dot.stroke;
       ctx.stroke();
     });
 
     // 3. Centered address capsule
-    const capsuleH = Math.round(height * 0.62);
-    const capsuleW = Math.min(Math.round(width * 0.35), 480);
-    const capsuleX = Math.round((width - capsuleW) / 2);
+    // On screen: height: 16px, padding: 0 12px, border-radius: 4px, font: 11px
+    const capsuleH = Math.round(16 * scale);
     const capsuleY = Math.round((height - capsuleH) / 2);
+    const fontSize = Math.max(11, Math.round(11 * scale));
+    ctx.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif`;
+    const textW = ctx.measureText(domainText).width;
+    const padX = Math.round(12 * scale);
+    const capsuleW = Math.min(Math.round(width * 0.48), Math.round(textW + padX * 2));
+    const capsuleX = Math.round((width - capsuleW) / 2);
+    const radius = Math.round(4 * scale);
+
     ctx.beginPath();
-    ctx.roundRect(capsuleX, capsuleY, capsuleW, capsuleH, 4);
+    ctx.roundRect(capsuleX, capsuleY, capsuleW, capsuleH, radius);
     ctx.fillStyle = '#38383a';
     ctx.fill();
-    ctx.lineWidth = 1;
+    ctx.lineWidth = Math.max(1, Math.round(1 * scale));
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
     ctx.stroke();
 
     // 4. Centered domain text inside capsule
-    const fontSize = Math.max(12, Math.round(capsuleH * 0.54));
-    ctx.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(250, 250, 255, 0.92)';
@@ -360,24 +367,26 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     toastTimer = setTimeout(() => { toast.hidden = true; }, 2600);
   }
 
-  // ---------- Homecraft Logo Watermark (matching minimap credit, ultra-discreet) ----------
-  function drawWatermark(ctx, width, height) {
-    const badgeH = Math.max(18, Math.min(24, Math.round(height * 0.022)));
-    const fontSize = Math.round(badgeH * 0.44);
-    ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif`;
+  // ---------- Homecraft Logo Watermark (matching live viewfinder, 100% WYSIWYG) ----------
+  function drawWatermark(ctx, width, height, scale = 1) {
+    // On screen: height: 20px, right: 28px, bottom: 24px, logo: 12px, font: 10px, pad: 5px/8px, gap: 4px
+    const badgeH = Math.round(20 * scale);
+    const padLeft = Math.round(5 * scale);
+    const padRight = Math.round(8 * scale);
+    const gap = Math.round(4 * scale);
+    const iconSize = Math.round(12 * scale);
+    const fontSize = Math.max(10, Math.round(10 * scale));
+    const marginRight = Math.round(28 * scale);
+    const marginBottom = Math.round(24 * scale);
 
+    ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif`;
     const label = 'homecraft';
     const textWidth = ctx.measureText(label).width;
 
-    const pad = Math.round(badgeH * 0.22);
-    const gap = Math.round(badgeH * 0.18);
-    const iconSize = badgeH - pad * 2;
-    const pillW = pad + iconSize + gap + textWidth + Math.round(pad * 1.5);
+    const pillW = padLeft + iconSize + gap + textWidth + padRight;
     const pillH = badgeH;
-
-    const margin = Math.round(Math.min(width, height) * 0.024);
-    const x = width - pillW - margin;
-    const y = height - pillH - margin;
+    const x = width - pillW - marginRight;
+    const y = height - pillH - marginBottom;
 
     // Semi-transparent dark rounded badge matching minimap credit
     ctx.beginPath();
@@ -385,19 +394,20 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     ctx.fillStyle = 'rgba(10, 12, 14, 0.72)';
     ctx.fill();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = Math.max(1, Math.round(1 * scale));
     ctx.stroke();
 
     // 3D Block Logo
     if (homecraftLogoImg && homecraftLogoImg.complete && homecraftLogoImg.naturalWidth) {
-      ctx.drawImage(homecraftLogoImg, x + pad, y + pad, iconSize, iconSize);
+      const iconY = y + Math.round((pillH - iconSize) / 2);
+      ctx.drawImage(homecraftLogoImg, x + padLeft, iconY, iconSize, iconSize);
     }
 
     // Text: homecraft
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(label, x + pad + iconSize + gap, y + pillH / 2);
+    ctx.fillText(label, x + padLeft + iconSize + gap, y + pillH / 2);
   }
 
   // ---------- Capture & Composite ----------
@@ -412,7 +422,7 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     const sw = source.width;
     const sh = source.height;
 
-    // Target dimensions
+    // Target dimensions: pristine Full HD / 2K resolutions preserving exact ratio
     let targetW, targetH;
     if (ratio === '16:9') {
       targetW = 1920; targetH = 1080;
@@ -427,10 +437,13 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     const cRect = source.getBoundingClientRect();
     const fRect = cropFrame ? cropFrame.getBoundingClientRect() : cRect;
 
-    const barHeight = withMacFrame ? (ratio === '9:16' ? 28 : ratio === '1:1' ? 30 : 34) : 0;
+    const frameW = fRect.width || targetW;
+    const frameH = fRect.height || targetH;
+    const scale = targetW / frameW;
+
     const outCanvas = document.createElement('canvas');
     outCanvas.width = targetW;
-    outCanvas.height = targetH + barHeight;
+    outCanvas.height = targetH;
     const ctx = outCanvas.getContext('2d');
 
     // Scale from client screen pixels to high-res WebGL canvas pixels
@@ -439,8 +452,6 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
 
     const frameLeft = fRect.left - cRect.left;
     const frameTop = fRect.top - cRect.top;
-    const frameW = fRect.width;
-    const frameH = fRect.height;
 
     // Overlap region between crop frame and 3D canvas
     const visibleLeft = Math.max(0, frameLeft);
@@ -457,29 +468,32 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     const sWidth = Math.round(visibleW * scaleX);
     const sHeight = Math.round(visibleH * scaleY);
 
-    // Target export coordinates (maintains exact pixel mapping without distortion)
+    // Target export coordinates (maintains exact 1:1 pixel mapping with crop frame)
     const destX = Math.round(((visibleLeft - frameLeft) / frameW) * targetW);
-    const destY = Math.round(((visibleTop - frameTop) / frameH) * targetH) + barHeight;
+    const destY = Math.round(((visibleTop - frameTop) / frameH) * targetH);
     const destW = Math.round((visibleW / frameW) * targetW);
     const destH = Math.round((visibleH / frameH) * targetH);
 
     // Fill background with fog/theme color if frame extends beyond canvas
     ctx.fillStyle = `#${stage.fogTarget ? stage.fogTarget.getHexString() : '2a2d31'}`;
-    ctx.fillRect(0, barHeight, targetW, targetH);
+    ctx.fillRect(0, 0, targetW, targetH);
 
-    // 1. Draw 3D scene
+    // 1. Draw 3D scene (exact 1:1 match with crop frame view)
     if (sWidth > 0 && sHeight > 0 && destW > 0 && destH > 0) {
       ctx.drawImage(source, sx, sy, sWidth, sHeight, destX, destY, destW, destH);
     }
 
-    // 2. Draw Mac bar if enabled
+    // 2. Draw Mac bar if enabled (proportionally scaled to match on-screen viewfinder)
     if (withMacFrame) {
-      drawMacWindowBar(ctx, targetW, barHeight, getSiteDomain());
+      const liveBar = root.querySelector('.photo-live-mac-bar');
+      const liveBarH = (liveBar && liveBar.getBoundingClientRect().height) || 24;
+      const exportBarH = Math.round(liveBarH * scale);
+      drawMacWindowBar(ctx, targetW, exportBarH, getSiteDomain(), scale);
     }
 
-    // 3. Draw branding watermark
+    // 3. Draw branding watermark (proportionally scaled to match on-screen viewfinder)
     await loadHomecraftLogo();
-    drawWatermark(ctx, targetW, targetH + barHeight);
+    drawWatermark(ctx, targetW, targetH, scale);
 
     root.classList.remove('capturing');
 
