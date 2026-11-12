@@ -35,15 +35,12 @@
     "check:metadata": "node tools/check-metadata.mjs",
     "check:mailbox": "node --experimental-vm-modules tools/check-mailbox.cjs && node tools/check-mailbox-ui.cjs",
     "build": "bash tools/build.sh",
-    "build:project-page": "node tools/build-project-page.mjs",
-    "check:project-page": "node tools/check-project-page.mjs",
     "directory": "node tools/directory.mjs check",
     "test:listing": "node --test tools/listing-validation.test.mjs tools/listing-github.test.mjs tools/check-listing.test.mjs",
     "check:listing": "node tools/check-listing.mjs",
     "check:pr": "node tools/pr-check.mjs"
   },
   "devDependencies": {
-    "marked": "18.1.3",
     "playwright": "1.64.1"
   },
   "engines": {

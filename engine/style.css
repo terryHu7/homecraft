@@ -798,24 +798,21 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 
 .photo-viewfinder {
   position: absolute; inset: 0; pointer-events: none;
-  display: flex; align-items: center; justify-content: center;
-  padding: 16px 20px 200px; box-sizing: border-box;
+  overflow: hidden;
 }
 .photo-crop-frame {
-  position: relative; display: flex; flex-direction: column; overflow: hidden;
+  position: absolute; top: 0; left: 0;
+  display: flex; flex-direction: column; overflow: visible;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.44), inset 0 0 0 1px rgba(255, 255, 255, 0.32);
   border-radius: 8px; pointer-events: auto; cursor: grab;
-  transition: aspect-ratio .2s ease, width .2s ease, height .2s ease;
-  max-width: 100%; max-height: 100%; touch-action: none; user-select: none;
+  touch-action: none; user-select: none;
+  box-sizing: border-box;
 }
 .photo-crop-frame.is-moving {
   cursor: grabbing !important;
-  transition: none !important;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.52), inset 0 0 0 1.5px rgba(255, 255, 255, 0.65);
 }
 .photo-crop-frame.is-resizing {
-  cursor: nwse-resize !important;
-  transition: none !important;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.85);
 }
 .photo-frame-handle {
@@ -829,21 +826,13 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 .frame-pill {
   width: 28px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.4);
 }
-[data-ratio="16:9"] .photo-crop-frame {
-  aspect-ratio: 16 / 9; width: min(88vw, calc((100vh - 240px) * 16 / 9));
-}
-[data-ratio="9:16"] .photo-crop-frame {
-  aspect-ratio: 9 / 16; height: min(calc(100vh - 240px), calc(86vw * 16 / 9));
-}
-[data-ratio="1:1"] .photo-crop-frame {
-  aspect-ratio: 1 / 1; width: min(calc(100vh - 240px), 70vw); height: min(calc(100vh - 240px), 70vw);
-}
 
 .photo-live-mac-bar {
   position: absolute; top: 0; left: 0; right: 0;
   height: var(--photo-bar-h, 38px);
   background: #2a2a2c; display: flex; align-items: center; justify-content: center;
   z-index: 5; pointer-events: none; border-bottom: 1px solid rgba(0, 0, 0, 0.45);
+  border-top-left-radius: 8px; border-top-right-radius: 8px;
   box-sizing: border-box;
 }
 .photo-live-mac-bar[hidden] {
@@ -876,8 +865,8 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
   position: absolute; inset: 0; pointer-events: none; z-index: 12;
 }
 .p-corner {
-  position: absolute; width: 32px; height: 32px;
-  pointer-events: auto; touch-action: none; box-sizing: border-box;
+  position: absolute; width: 38px; height: 38px;
+  pointer-events: auto; touch-action: none; box-sizing: border-box; z-index: 6;
 }
 .p-corner::after {
   content: ''; position: absolute;
@@ -900,7 +889,40 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 .p-corner.bl::after { bottom: 10px; left: 10px; border-width: 0 0 2.5px 2.5px; border-bottom-left-radius: 3px; }
 
 .p-corner.br { bottom: 0; right: 0; cursor: nwse-resize; }
-.p-corner.br::after { bottom: 10px; right: 10px; border-width: 0 2.5px 2.5px 0; border-bottom-right-radius: 3px; }
+.p-corner.br::after {
+  bottom: 10px; right: 10px; border-width: 0 2.5px 2.5px 0; border-bottom-right-radius: 3px;
+  border-color: rgba(255, 255, 255, 0.48);
+}
+
+/* 4 edge handles for independent width/height dragging */
+.p-edge {
+  position: absolute; pointer-events: auto; touch-action: none; box-sizing: border-box; z-index: 5;
+}
+.p-edge.t {
+  top: -10px; left: 38px; right: 38px; height: 20px; cursor: ns-resize;
+}
+.p-edge.b {
+  bottom: -10px; left: 38px; right: 38px; height: 20px; cursor: ns-resize;
+}
+.p-edge.l {
+  left: -10px; top: 38px; bottom: 38px; width: 20px; cursor: ew-resize;
+}
+.p-edge.r {
+  right: -10px; top: 38px; bottom: 38px; width: 20px; cursor: ew-resize;
+}
+.p-edge::after {
+  content: ''; position: absolute; background: rgba(255, 255, 255, 0.45); border-radius: 2px;
+  transition: opacity .15s ease, background .15s ease; opacity: 0; pointer-events: none;
+}
+.p-edge:hover::after, .photo-crop-frame.is-resizing .p-edge::after {
+  opacity: 1; background: rgba(255, 255, 255, 0.85);
+}
+.p-edge.t::after, .p-edge.b::after {
+  top: 8px; left: 50%; transform: translateX(-50%); width: 28px; height: 3px;
+}
+.p-edge.l::after, .p-edge.r::after {
+  left: 8px; top: 50%; transform: translateY(-50%); width: 3px; height: 28px;
+}
 
 /* When Mac bar is visible, frame the 3D scene neatly below the bar */
 .photo-live-mac-bar:not([hidden]) ~ .photo-corners .p-corner.tl::after,
@@ -957,6 +979,30 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 
 .photo-capsule-strip {
   display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
+}
+.photo-top-pills, .photo-shutter-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
+}
+.photo-quick-flip {
+  width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.1);
+  color: #ffffff; cursor: pointer; transition: all .14s ease; flex-shrink: 0;
+}
+.photo-quick-flip:hover {
+  background: rgba(255, 255, 255, 0.25); color: #ffffff; border-color: rgba(255, 255, 255, 0.32);
+}
+.photo-quick-flip:active {
+  transform: scale(0.92);
+}
+.flip-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: transform .22s ease;
+}
+.photo-quick-flip.is-selfie .flip-icon {
+  transform: rotate(180deg);
+}
+.flip-icon svg {
+  width: 21px; height: 21px; display: block;
 }
 
 /* Individual Dock Item for physical popup anchoring */
@@ -1030,8 +1076,8 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 /* Live Viewfinder Watermark (所见即所得: in-viewfinder real-time match, micro and subtle) */
 .photo-live-watermark {
   position: absolute;
-  right: calc(28px * var(--photo-ui-scale, 1));
-  bottom: calc(24px * var(--photo-ui-scale, 1));
+  right: calc(12px * var(--photo-ui-scale, 1));
+  bottom: calc(12px * var(--photo-ui-scale, 1));
   display: inline-flex; align-items: center;
   gap: calc(5px * var(--photo-ui-scale, 1));
   height: calc(22px * var(--photo-ui-scale, 1));
@@ -1127,6 +1173,9 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 .ratio-rect {
   display: block; border: 1.8px solid currentColor; border-radius: 2.5px; box-sizing: border-box;
 }
+.ratio-rect.r-free {
+  width: 16px; height: 13px; border-style: dashed;
+}
 .ratio-rect.r-16-9 {
   width: 18px; height: 11px;
 }
@@ -1177,19 +1226,135 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
   font-size: 16px; line-height: 1; width: 20px; text-align: center; flex-shrink: 0;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
   .photo-bar {
-    border-radius: 22px; padding: 6px 10px;
-    max-width: calc(100vw - 20px);
+    position: fixed;
+    left: 0 !important; right: 0 !important; top: auto !important;
+    bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    transform: none !important;
+    width: 100% !important; max-width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 16px !important;
+    pointer-events: none !important;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px;
+  }
+  .photo-drag-handle {
+    display: none !important;
+  }
+  .cap-divider {
+    display: none !important;
   }
   .photo-capsule-strip {
-    flex-wrap: wrap; justify-content: center; gap: 6px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; width: 100%; pointer-events: none;
+  }
+
+  /* Row 1: Top micro option pills */
+  .photo-top-pills {
+    pointer-events: auto;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: rgba(18, 20, 24, 0.88);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 9999px;
+    padding: 4px 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+  .photo-top-pills .photo-toggle-pill {
+    width: 32px; height: 30px;
+  }
+  .photo-top-pills .photo-capsule {
+    height: 30px; padding: 0 10px; font-size: 13px; gap: 5px;
+  }
+
+  /* Row 2: Bottom Shutter Action Row */
+  .photo-shutter-row {
+    pointer-events: auto;
+    display: flex; align-items: center; justify-content: space-between;
+    width: min(290px, calc(100vw - 48px));
+  }
+  .photo-quick-flip {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(22, 24, 28, 0.86);
+    border: 1.5px solid rgba(255, 255, 255, 0.22);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  }
+  .photo-quick-flip .flip-icon svg {
+    width: 25px; height: 25px;
+  }
+  .photo-quick-flip:active {
+    transform: scale(0.92); background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Prominent camera shutter button */
+  .photo-save-btn {
+    width: 66px; height: 66px; border-radius: 50%;
+    background: #ffffff; color: #141518;
+    border: 4px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35), 0 8px 28px rgba(0, 0, 0, 0.55);
+    display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .photo-save-btn svg {
+    width: 28px; height: 28px; stroke-width: 2.3;
+  }
+  .photo-save-btn span {
+    display: none !important;
+  }
+  .photo-save-btn:active {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 4px 14px rgba(0, 0, 0, 0.4);
+  }
+
+  .photo-close-btn {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(22, 24, 28, 0.86);
+    border: 1.5px solid rgba(255, 255, 255, 0.22);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  }
+  .photo-close-btn svg {
+    width: 17px; height: 17px;
+  }
+  .photo-close-btn:active {
+    transform: scale(0.92); background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Compact Popovers on mobile */
+  .photo-popover {
+    bottom: calc(100% + 10px) !important;
+    padding: 10px 12px !important;
+    border-radius: 16px !important;
+    max-width: calc(100vw - 32px) !important;
   }
   .scene-cascade-layout {
-    flex-direction: column;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .scene-column .column-header {
+    font-size: 11px !important; padding: 0 2px 4px !important;
+    opacity: 0.75;
+  }
+  .scene-list {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px !important;
+  }
+  .scene-pill {
+    height: 32px !important; padding: 0 4px !important;
+    font-size: 12px !important; gap: 4px !important;
+    justify-content: center !important;
+    border-radius: 7px !important;
+  }
+  .scene-pill .pill-icon {
+    font-size: 13px !important; width: auto !important;
   }
   .cascade-divider {
-    width: 100%; height: 1px; margin: 4px 0;
+    width: 100% !important; height: 1px !important; margin: 2px 0 !important;
   }
 }
 

@@ -29,6 +29,15 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
   let savedView = null;
   let flashEl = null;
 
+  // A handheld selfie needs a close, wide lens. The raised hand stays in the
+  // foreground instead of pulling back into a conventional portrait camera.
+  const defaultFov = () => (innerHeight > innerWidth * 1.1 ? 58 : 46);
+  function applyLens() {
+    const want = open && angle === 'selfie' ? (ratio === '9:16' ? 68 : 58) : defaultFov();
+    const cam = stage.camera;
+    if (Math.abs(cam.fov - want) > 0.01) { cam.fov = want; cam.updateProjectionMatrix(); }
+  }
+
   // ---------- Camera Angle Calculator ----------
   const B = L.ISLAND;
   const span = Math.min(120, Math.max(B.x1 - B.x0, B.z1 - B.z0));
@@ -48,29 +57,31 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
       return { pos, look };
     }
     if (id === 'selfie') {
-      const isPortrait = ratio === '9:16' || (ratio === '1:1' && innerHeight > innerWidth);
+      const lens = avatar?.selfieAnchors?.();
+      if (lens) {
+        const isPortrait = ratio === '9:16' || (ratio === '1:1' && innerHeight > innerWidth);
+        const { face, forward, right } = lens;
+        // Stay close to the face and on the raised-hand side. A wide lens and
+        // a slightly downward look keep the outstretched arm at the lower
+        // foreground edge while leaving half the frame for a group or view.
+        const pos = face.clone()
+          .addScaledVector(forward, isPortrait ? 1.15 : 0.92)
+          .addScaledVector(right, isPortrait ? -0.50 : -0.26);
+        pos.y = face.y + 0.20;
+        const look = face.clone()
+          .addScaledVector(forward, -0.10)
+          .addScaledVector(right, isPortrait ? -0.04 : -0.08);
+        look.y = face.y - 0.06;
+        return { pos: pos.toArray(), look: look.toArray() };
+      }
+      // No avatar pose available: keep a close front-facing fallback.
+      const h = player.heading;
       const px = player.pos.x, py = player.y, pz = player.pos.z;
-      const h = player.heading; // player yaw orientation
-      const dist = isPortrait ? 1.85 : 2.45;
-      const side = isPortrait ? -0.25 : -0.40; // right-handed selfie hold angle (character's right is -x)
-      const lift = isPortrait ? 0.28 : 0.36; // elevated flattering selfie perspective
-
-      // Forward vector facing player front (+z when heading=0)
-      const forwardX = Math.sin(h);
-      const forwardZ = Math.cos(h);
-      const rightX = Math.cos(h);
-      const rightZ = -Math.sin(h);
-
-      const camX = px + forwardX * dist + rightX * side;
-      const camY = py + 1.45 + lift;
-      const camZ = pz + forwardZ * dist + rightZ * side;
-
-      // Focus on the player's face/chest
-      const lookX = px;
-      const lookY = py + 1.38;
-      const lookZ = pz;
-
-      return { pos: [camX, camY, camZ], look: [lookX, lookY, lookZ] };
+      const dist = 1.5, side = -0.35;
+      return {
+        pos: [px + Math.sin(h) * dist + Math.cos(h) * side, py + 1.72, pz + Math.cos(h) * dist - Math.sin(h) * side],
+        look: [px, py + 1.55, pz],
+      };
     }
     if (id === 'spawn') {
       const isPortrait = ratio === '9:16' || (ratio === '1:1' && innerHeight > innerWidth);
@@ -144,8 +155,20 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     textEl.textContent = t(zh, en);
   }
 
+  const quickFlipBtn = document.getElementById('photoQuickFlip');
+  function updateQuickFlipBtn() {
+    if (!quickFlipBtn) return;
+    const isSelfie = angle === 'selfie';
+    const label = isSelfie ? t('切回场景视角', 'Switch to scene') : t('切换自拍视角', 'Switch to selfie');
+    quickFlipBtn.classList.toggle('is-selfie', isSelfie);
+    quickFlipBtn.setAttribute('title', label);
+    quickFlipBtn.setAttribute('aria-label', label);
+  }
+
   function applyAngle(id) {
     angle = id;
+    applyLens();
+    updateQuickFlipBtn();
     for (const b of root.querySelectorAll('[data-angle]')) {
       const active = b.dataset.angle === id;
       b.setAttribute('aria-checked', String(active));
@@ -171,7 +194,7 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     }
   }
 
-  function applyRatio(r) {
+  function setRatioLabel(r) {
     ratio = r;
     for (const b of root.querySelectorAll('[data-ratio]')) {
       const active = b.dataset.ratio === r;
@@ -179,9 +202,52 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
       b.classList.toggle('on', active);
     }
     const capRatioText = document.getElementById('capRatioText');
-    if (capRatioText) capRatioText.textContent = r;
+    if (capRatioText) {
+      if (r === 'free') capRatioText.textContent = t('自由', 'Free');
+      else capRatioText.textContent = r;
+    }
     root.dataset.ratio = r;
-    resetCropFramePosition();
+  }
+
+  function applyRatio(r) {
+    setRatioLabel(r);
+    applyLens();
+    if (r !== 'free') {
+      const sw = window.innerWidth;
+      const sh = window.innerHeight;
+      const isMobile = sw < 640;
+      const bottomReserved = isMobile ? 140 : 120;
+      const topReserved = isMobile ? 40 : 0;
+      const availH = sh - bottomReserved - topReserved;
+      const availW = sw * (isMobile ? 0.92 : 0.88);
+
+      let targetW, targetH;
+      if (r === '16:9') {
+        targetW = Math.min(availW, availH * (16 / 9));
+        targetH = targetW / (16 / 9);
+      } else if (r === '9:16') {
+        targetH = Math.min(availH, availW * (16 / 9));
+        targetW = targetH * (9 / 16);
+      } else { // 1:1
+        const size = Math.min(availW, availH);
+        targetW = size;
+        targetH = size;
+      }
+
+      // Preserve current frame center if already valid
+      let centerX = (frameW > 0 && frameX >= 0) ? (frameX + frameW / 2) : (sw / 2);
+      let centerY = (frameH > 0 && frameY >= 0) ? (frameY + frameH / 2) : (topReserved + availH / 2);
+      if (centerX < targetW / 2) centerX = targetW / 2;
+      if (centerX > sw - targetW / 2) centerX = sw - targetW / 2;
+      if (centerY < topReserved + targetH / 2) centerY = topReserved + targetH / 2;
+      if (centerY > sh - bottomReserved - targetH / 2) centerY = sh - bottomReserved - targetH / 2;
+
+      frameW = Math.round(targetW);
+      frameH = Math.round(targetH);
+      frameX = Math.round(centerX - frameW / 2);
+      frameY = Math.round(centerY - frameH / 2);
+      applyCropFrame();
+    }
     if (angle === 'aerial' || angle === 'selfie' || angle === 'spawn') {
       const preset = getAnglePreset(angle);
       if (preset) rig.showcase(preset.pos, preset.look);
@@ -369,15 +435,15 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
 
   // ---------- Homecraft Logo Watermark (matching live viewfinder, 100% WYSIWYG) ----------
   function drawWatermark(ctx, width, height, s = 1) {
-    // On screen baseline: height: 22px, right: 28px, bottom: 24px, logo: 13px, font: 11px, pad: 6px/9px, gap: 5px
+    // On screen baseline: height: 22px, right: 12px, bottom: 12px, logo: 13px, font: 11px, pad: 6px/9px, gap: 5px
     const badgeH = Math.round(22 * s);
     const padLeft = Math.round(6 * s);
     const padRight = Math.round(9 * s);
     const gap = Math.round(5 * s);
     const iconSize = Math.round(13 * s);
     const fontSize = Math.max(10, Math.round(11 * s));
-    const marginRight = Math.round(28 * s);
-    const marginBottom = Math.round(24 * s);
+    const marginRight = Math.round(12 * s);
+    const marginBottom = Math.round(12 * s);
 
     ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif`;
     const label = 'homecraft';
@@ -422,23 +488,19 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     const sw = source.width;
     const sh = source.height;
 
-    // Target dimensions: pristine Full HD / 2K resolutions preserving exact ratio
-    let targetW, targetH;
-    if (ratio === '16:9') {
-      targetW = 1920; targetH = 1080;
-    } else if (ratio === '9:16') {
-      targetW = 1080; targetH = 1920;
-    } else {
-      targetW = 1440; targetH = 1440;
-    }
-
     // Precise WYSIWYG crop coordinates based on crop frame on screen
     const cropFrame = root.querySelector('.photo-crop-frame');
     const cRect = source.getBoundingClientRect();
     const fRect = cropFrame ? cropFrame.getBoundingClientRect() : cRect;
 
-    const frameW = fRect.width || targetW;
-    const frameH = fRect.height || targetH;
+    const frameW = fRect.width || cRect.width;
+    const frameH = fRect.height || cRect.height;
+
+    // Target dimensions: high-resolution export preserving the EXACT aspect ratio and size of whatever the user framed
+    const maxDim = Math.max(frameW, frameH);
+    const exportScale = Math.max(1.5, Math.min(3.0, 1920 / maxDim));
+    const targetW = Math.round(frameW * exportScale);
+    const targetH = Math.round(frameH * exportScale);
     const scale = targetW / frameW;
 
     // Scale UI elements based on live crop frame scale factor
@@ -562,135 +624,244 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
 
   // ---------- Resizable & Draggable Viewfinder Crop Frame ----------
   const cropFrame = root.querySelector('.photo-crop-frame');
-  let isMovingFrame = false;
-  let frameStartX = 0, frameStartY = 0;
-  let frameOffsetX = 0, frameOffsetY = 0;
-
-  // Corner resize state
-  let isResizingFrame = false;
-  let resizeCorner = null; // { isLeft: boolean, isTop: boolean }
-  let resizeStartPointerX = 0, resizeStartPointerY = 0;
-  let resizeStartW = 0, resizeStartH = 0;
-  let resizeStartOffsetX = 0, resizeStartOffsetY = 0;
-  let resizeStartRect = null;
+  let frameX = -1, frameY = -1, frameW = 0, frameH = 0;
 
   function updateCropFrameScale() {
     if (!cropFrame) return;
-    const fRect = cropFrame.getBoundingClientRect();
-    const w = fRect.width || (ratio === '9:16' ? 440 : 920);
-    const baseRef = ratio === '9:16' ? 440 : 920;
-    const uiScale = Math.max(0.65, Math.min(1.5, w / baseRef));
+    const baseRef = ratio === '9:16' ? 440 : 960;
+    const uiScale = Math.max(0.65, Math.min(2.0, frameW / baseRef));
     const barH = Math.round(38 * uiScale);
     cropFrame.style.setProperty('--photo-ui-scale', uiScale.toFixed(3));
     cropFrame.style.setProperty('--photo-bar-h', `${barH}px`);
   }
 
-  function onCornerPointerDown(e) {
+  function getViewportSize() {
+    const rect = viewfinder?.getBoundingClientRect();
+    return {
+      width: Math.max(1, Math.round(rect?.width || window.innerWidth)),
+      height: Math.max(1, Math.round(rect?.height || window.innerHeight)),
+    };
+  }
+
+  function applyCropFrame() {
+    if (!cropFrame) return;
+    // Every resize path ends here, so wheel, pinch, handles, dragging and
+    // orientation changes all share the same on-screen boundary.
+    const viewport = getViewportSize();
+    const minW = Math.min(120, viewport.width);
+    const minH = Math.min(80, viewport.height);
+    frameW = Math.round(Math.max(minW, Math.min(viewport.width, frameW)));
+    frameH = Math.round(Math.max(minH, Math.min(viewport.height, frameH)));
+    frameX = Math.round(Math.max(0, Math.min(viewport.width - frameW, frameX)));
+    frameY = Math.round(Math.max(0, Math.min(viewport.height - frameH, frameY)));
+    cropFrame.style.width = `${frameW}px`;
+    cropFrame.style.height = `${frameH}px`;
+    cropFrame.style.transform = `translate3d(${frameX}px, ${frameY}px, 0)`;
+    updateCropFrameScale();
+  }
+
+  function resetCropFramePosition() {
+    const sw = window.innerWidth;
+    const sh = window.innerHeight;
+    const isMobile = sw < 640;
+    const aspect = ratio === '16:9' ? (16 / 9) : (ratio === '9:16' ? (9 / 16) : 1);
+    const bottomReserved = isMobile ? 140 : 120;
+    const topReserved = isMobile ? 40 : 0;
+    const availH = sh - bottomReserved - topReserved;
+    const availW = sw * (isMobile ? 0.92 : 0.88);
+
+    let w, h;
+    if (ratio === '16:9') {
+      w = Math.min(availW, availH * (16 / 9));
+      h = w / (16 / 9);
+    } else if (ratio === '9:16') {
+      h = Math.min(availH, availW * (16 / 9));
+      w = h * (9 / 16);
+    } else {
+      const size = Math.min(availW, availH);
+      w = size; h = size;
+    }
+    frameW = Math.round(w);
+    frameH = Math.round(h);
+    frameX = Math.round((sw - frameW) / 2);
+    frameY = Math.round(topReserved + (availH - frameH) / 2);
+    applyCropFrame();
+  }
+
+  // Corner & Edge 8-handle resize state
+  let isResizing = false;
+  let resizeHandle = null; // 'tl' | 'tr' | 'bl' | 'br' | 't' | 'b' | 'l' | 'r'
+  let resizeStartPointerX = 0, resizeStartPointerY = 0;
+  let resizeStartFrameX = 0, resizeStartFrameY = 0;
+  let resizeStartW = 0, resizeStartH = 0;
+  let resizeStartAspect = 1;
+
+  function onResizePointerDown(e) {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    const corner = e.target.closest('.p-corner');
-    if (!corner || !cropFrame) return;
+    const target = e.target.closest('.p-corner, .p-edge');
+    if (!target || !cropFrame) return;
 
     e.preventDefault();
     e.stopPropagation();
 
-    const isLeft = corner.classList.contains('tl') || corner.classList.contains('bl');
-    const isTop = corner.classList.contains('tl') || corner.classList.contains('tr');
+    isResizing = true;
+    if (target.classList.contains('tl')) resizeHandle = 'tl';
+    else if (target.classList.contains('tr')) resizeHandle = 'tr';
+    else if (target.classList.contains('bl')) resizeHandle = 'bl';
+    else if (target.classList.contains('br')) resizeHandle = 'br';
+    else if (target.classList.contains('t')) resizeHandle = 't';
+    else if (target.classList.contains('b')) resizeHandle = 'b';
+    else if (target.classList.contains('l')) resizeHandle = 'l';
+    else if (target.classList.contains('r')) resizeHandle = 'r';
 
-    const fRect = cropFrame.getBoundingClientRect();
-    isResizingFrame = true;
-    resizeCorner = { isLeft, isTop };
     resizeStartPointerX = e.clientX;
     resizeStartPointerY = e.clientY;
-    resizeStartW = fRect.width;
-    resizeStartH = fRect.height;
-    resizeStartOffsetX = frameOffsetX;
-    resizeStartOffsetY = frameOffsetY;
-    resizeStartRect = { left: fRect.left, top: fRect.top, right: fRect.right, bottom: fRect.bottom };
+    resizeStartFrameX = frameX;
+    resizeStartFrameY = frameY;
+    resizeStartW = frameW;
+    resizeStartH = frameH;
+    resizeStartAspect = (frameW > 0 && frameH > 0) ? (frameW / frameH) : (16 / 9);
 
     cropFrame.classList.add('is-resizing');
-    corner.setPointerCapture(e.pointerId);
+    target.setPointerCapture(e.pointerId);
   }
 
-  function onCornerPointerMove(e) {
-    if (!isResizingFrame || !cropFrame || !resizeStartRect) return;
+  function onResizePointerMove(e) {
+    if (!isResizing || !cropFrame || !resizeHandle) return;
 
-    const aspect = ratio === '16:9' ? (16 / 9) : (ratio === '9:16' ? (9 / 16) : 1);
-    const deltaX = (e.clientX - resizeStartPointerX) * (resizeCorner.isLeft ? -1 : 1);
-    const deltaY = (e.clientY - resizeStartPointerY) * (resizeCorner.isTop ? -1 : 1);
+    const dx = e.clientX - resizeStartPointerX;
+    const dy = e.clientY - resizeStartPointerY;
 
-    // Project onto current aspect ratio for smooth diagonal tracking
-    const dwTotal = (deltaX + deltaY * aspect) / 2;
+    const minW = 120;
+    const minH = 80;
+    const viewport = getViewportSize();
+    const maxW = viewport.width;
+    const maxH = viewport.height;
 
-    const minW = ratio === '9:16' ? 240 : 360;
+    let newX = resizeStartFrameX;
+    let newY = resizeStartFrameY;
+    let newW = resizeStartW;
+    let newH = resizeStartH;
 
-    // Boundary constraints: ensure the crop frame never extends outside viewport margins
-    const fixedX = resizeCorner.isLeft ? resizeStartRect.right : resizeStartRect.left;
-    const fixedY = resizeCorner.isTop ? resizeStartRect.bottom : resizeStartRect.top;
-    const availW = resizeCorner.isLeft ? (fixedX - 16) : (window.innerWidth - 16 - fixedX);
-    const availH = resizeCorner.isTop ? (fixedY - 16) : (window.innerHeight - 84 - fixedY);
-    const boundaryMaxW = Math.max(minW, Math.min(availW, availH * aspect));
-    const maxW = Math.min(window.innerWidth - 32, (window.innerHeight - 84) * aspect, boundaryMaxW);
+    const lockAspect = e.shiftKey; // Hold shift to lock aspect ratio, otherwise freeform arbitrary sizing
 
-    const newW = Math.max(minW, Math.min(maxW, resizeStartW + dwTotal));
-    const newH = newW / aspect;
-    const dw = newW - resizeStartW;
-    const dh = newH - resizeStartH;
+    if (resizeHandle === 'r') {
+      newW = Math.max(minW, Math.min(maxW, resizeStartW + dx));
+    } else if (resizeHandle === 'l') {
+      newW = Math.max(minW, Math.min(maxW, resizeStartW - dx));
+      newX = (resizeStartFrameX + resizeStartW) - newW;
+    } else if (resizeHandle === 'b') {
+      newH = Math.max(minH, Math.min(maxH, resizeStartH + dy));
+    } else if (resizeHandle === 't') {
+      newH = Math.max(minH, Math.min(maxH, resizeStartH - dy));
+      newY = (resizeStartFrameY + resizeStartH) - newH;
+    } else if (resizeHandle === 'br') {
+      if (lockAspect) {
+        const a = resizeStartAspect;
+        const s = (dx * a + dy) / (a * a + 1);
+        newW = Math.max(minW, Math.min(maxW, resizeStartW + s * a));
+        newH = Math.max(minH, Math.min(maxH, newW / a));
+      } else {
+        newW = Math.max(minW, Math.min(maxW, resizeStartW + dx));
+        newH = Math.max(minH, Math.min(maxH, resizeStartH + dy));
+      }
+    } else if (resizeHandle === 'tr') {
+      if (lockAspect) {
+        const a = resizeStartAspect;
+        const s = (dx * a - dy) / (a * a + 1);
+        newW = Math.max(minW, Math.min(maxW, resizeStartW + s * a));
+        newH = Math.max(minH, Math.min(maxH, newW / a));
+        newY = (resizeStartFrameY + resizeStartH) - newH;
+      } else {
+        newW = Math.max(minW, Math.min(maxW, resizeStartW + dx));
+        newH = Math.max(minH, Math.min(maxH, resizeStartH - dy));
+        newY = (resizeStartFrameY + resizeStartH) - newH;
+      }
+    } else if (resizeHandle === 'bl') {
+      if (lockAspect) {
+        const a = resizeStartAspect;
+        const s = (-dx * a + dy) / (a * a + 1);
+        newW = Math.max(minW, Math.min(maxW, resizeStartW + s * a));
+        newH = Math.max(minH, Math.min(maxH, newW / a));
+        newX = (resizeStartFrameX + resizeStartW) - newW;
+      } else {
+        newW = Math.max(minW, Math.min(maxW, resizeStartW - dx));
+        newH = Math.max(minH, Math.min(maxH, resizeStartH + dy));
+        newX = (resizeStartFrameX + resizeStartW) - newW;
+      }
+    } else if (resizeHandle === 'tl') {
+      if (lockAspect) {
+        const a = resizeStartAspect;
+        const s = (-dx * a - dy) / (a * a + 1);
+        newW = Math.max(minW, Math.min(maxW, resizeStartW + s * a));
+        newH = Math.max(minH, Math.min(maxH, newW / a));
+        newX = (resizeStartFrameX + resizeStartW) - newW;
+        newY = (resizeStartFrameY + resizeStartH) - newH;
+      } else {
+        newW = Math.max(minW, Math.min(maxW, resizeStartW - dx));
+        newH = Math.max(minH, Math.min(maxH, resizeStartH - dy));
+        newX = (resizeStartFrameX + resizeStartW) - newW;
+        newY = (resizeStartFrameY + resizeStartH) - newH;
+      }
+    }
 
-    // Anchor the opposite corner in place during drag
-    frameOffsetX = resizeStartOffsetX + (resizeCorner.isLeft ? -dw / 2 : dw / 2);
-    frameOffsetY = resizeStartOffsetY + (resizeCorner.isTop ? -dh / 2 : dh / 2);
+    if (lockAspect) {
+      const a = resizeStartAspect;
+      const lockedMaxW = Math.min(maxW, maxH * a);
+      const lockedMinW = Math.min(lockedMaxW, Math.max(minW, minH * a));
+      newW = Math.max(lockedMinW, Math.min(lockedMaxW, newW));
+      newH = newW / a;
+      if (resizeHandle.includes('l')) newX = resizeStartFrameX + resizeStartW - newW;
+      if (resizeHandle.includes('t')) newY = resizeStartFrameY + resizeStartH - newH;
+    }
 
-    cropFrame.style.width = `${Math.round(newW)}px`;
-    cropFrame.style.height = `${Math.round(newH)}px`;
-    cropFrame.style.transform = `translate3d(${Math.round(frameOffsetX)}px, ${Math.round(frameOffsetY)}px, 0)`;
+    frameX = Math.round(newX);
+    frameY = Math.round(newY);
+    frameW = Math.round(newW);
+    frameH = Math.round(newH);
 
-    updateCropFrameScale();
+    // Switch ratio state to 'free' when freely resized
+    if (ratio !== 'free') {
+      setRatioLabel('free');
+    }
+
+    applyCropFrame();
   }
 
-  function onCornerPointerUp(e) {
-    if (!isResizingFrame || !cropFrame) return;
-    isResizingFrame = false;
-    resizeCorner = null;
-    cropFrame.classList.remove('is-resizing');
+  function onResizePointerUp(e) {
+    if (!isResizing) return;
+    isResizing = false;
+    resizeHandle = null;
+    cropFrame?.classList.remove('is-resizing');
     try { e.target.releasePointerCapture(e.pointerId); } catch {}
   }
 
+  // Moving / Panning the frame
+  let isMovingFrame = false;
+  let moveStartX = 0, moveStartY = 0;
+  let moveStartFrameX = 0, moveStartFrameY = 0;
+
   function onFramePointerDown(e) {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    if (e.target.closest('.p-corner, .live-mac-traffic, button, a')) return;
+    if (e.target.closest('.p-corner, .p-edge, .live-mac-traffic, button, a')) return;
 
     isMovingFrame = true;
-    frameStartX = e.clientX - frameOffsetX;
-    frameStartY = e.clientY - frameOffsetY;
+    moveStartX = e.clientX;
+    moveStartY = e.clientY;
+    moveStartFrameX = frameX;
+    moveStartFrameY = frameY;
     cropFrame?.classList.add('is-moving');
     cropFrame?.setPointerCapture(e.pointerId);
     e.preventDefault();
   }
 
   function onFramePointerMove(e) {
-    if (!isMovingFrame || !cropFrame) return;
-    const rawX = e.clientX - frameStartX;
-    const rawY = e.clientY - frameStartY;
-
-    const fRect = cropFrame.getBoundingClientRect();
-    const baseLeft = fRect.left - frameOffsetX;
-    const baseTop = fRect.top - frameOffsetY;
-    const baseRight = fRect.right - frameOffsetX;
-    const baseBottom = fRect.bottom - frameOffsetY;
-    const frameW = baseRight - baseLeft;
-    const frameH = baseBottom - baseTop;
-
-    // Fluid free motion anywhere across the entire page (up, down, left, right)
-    // Keep at least 60px visible on-screen so the user can easily grab it from any edge
-    const minX = -(baseLeft + frameW - 60);
-    const maxX = (window.innerWidth - baseLeft - 60);
-    const minY = -(baseTop + frameH - 60);
-    const maxY = (window.innerHeight - baseTop - 60);
-
-    frameOffsetX = Math.max(minX, Math.min(maxX, rawX));
-    frameOffsetY = Math.max(minY, Math.min(maxY, rawY));
-
-    cropFrame.style.transform = `translate3d(${Math.round(frameOffsetX)}px, ${Math.round(frameOffsetY)}px, 0)`;
+    if (!isMovingFrame || isResizing || !cropFrame) return;
+    const dx = e.clientX - moveStartX;
+    const dy = e.clientY - moveStartY;
+    frameX = Math.round(moveStartFrameX + dx);
+    frameY = Math.round(moveStartFrameY + dy);
+    applyCropFrame();
   }
 
   function onFramePointerUp(e) {
@@ -700,43 +871,40 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     try { cropFrame.releasePointerCapture(e.pointerId); } catch {}
   }
 
-  function resetCropFramePosition() {
-    frameOffsetX = 0;
-    frameOffsetY = 0;
-    if (cropFrame) {
-      cropFrame.style.width = '';
-      cropFrame.style.height = '';
-      cropFrame.style.transform = '';
-      updateCropFrameScale();
-    }
-  }
-
   function onFrameWheel(e) {
     if ((e.ctrlKey || e.metaKey || e.altKey) && cropFrame) {
       e.preventDefault();
-      const fRect = cropFrame.getBoundingClientRect();
-      const aspect = ratio === '16:9' ? (16 / 9) : (ratio === '9:16' ? (9 / 16) : 1);
-      const minW = ratio === '9:16' ? 240 : 360;
-      const maxW = Math.min(window.innerWidth - 32, (window.innerHeight - 80) * aspect);
-      const factor = e.deltaY < 0 ? 1.04 : 0.96;
-      const newW = Math.max(minW, Math.min(maxW, fRect.width * factor));
-      const newH = newW / aspect;
-      cropFrame.style.width = `${Math.round(newW)}px`;
-      cropFrame.style.height = `${Math.round(newH)}px`;
-      updateCropFrameScale();
+      const currentAspect = (frameW > 0 && frameH > 0) ? (frameW / frameH) : (16 / 9);
+      const factor = e.deltaY < 0 ? 1.05 : 0.95;
+      const minW = 120;
+      const viewport = getViewportSize();
+      const maxW = Math.min(viewport.width, viewport.height * currentAspect);
+      const newW = Math.max(minW, Math.min(maxW, frameW * factor));
+      const newH = newW / currentAspect;
+      const centerX = frameX + frameW / 2;
+      const centerY = frameY + frameH / 2;
+      frameW = Math.round(newW);
+      frameH = Math.round(newH);
+      frameX = Math.round(centerX - frameW / 2);
+      frameY = Math.round(centerY - frameH / 2);
+      applyCropFrame();
     }
   }
 
   // Touch pinch-to-zoom on crop frame
   let touchPinchDist = 0;
   let touchStartW = 0;
+  let touchStartCenterX = 0;
+  let touchStartCenterY = 0;
 
   function onTouchStart(e) {
     if (e.touches.length === 2 && cropFrame) {
       const p1 = e.touches[0];
       const p2 = e.touches[1];
       touchPinchDist = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
-      touchStartW = cropFrame.getBoundingClientRect().width;
+      touchStartW = frameW;
+      touchStartCenterX = frameX + frameW / 2;
+      touchStartCenterY = frameY + frameH / 2;
     }
   }
 
@@ -745,15 +913,18 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
       const p1 = e.touches[0];
       const p2 = e.touches[1];
       const dist = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
-      const aspect = ratio === '16:9' ? (16 / 9) : (ratio === '9:16' ? (9 / 16) : 1);
-      const minW = ratio === '9:16' ? 240 : 360;
-      const maxW = Math.min(window.innerWidth - 32, (window.innerHeight - 80) * aspect);
+      const currentAspect = (frameW > 0 && frameH > 0) ? (frameW / frameH) : (16 / 9);
+      const minW = 120;
+      const viewport = getViewportSize();
+      const maxW = Math.min(viewport.width, viewport.height * currentAspect);
       const scaleFactor = dist / touchPinchDist;
       const newW = Math.max(minW, Math.min(maxW, touchStartW * scaleFactor));
-      const newH = newW / aspect;
-      cropFrame.style.width = `${Math.round(newW)}px`;
-      cropFrame.style.height = `${Math.round(newH)}px`;
-      updateCropFrameScale();
+      const newH = newW / currentAspect;
+      frameW = Math.round(newW);
+      frameH = Math.round(newH);
+      frameX = Math.round(touchStartCenterX - frameW / 2);
+      frameY = Math.round(touchStartCenterY - frameH / 2);
+      applyCropFrame();
       e.preventDefault();
     }
   }
@@ -775,11 +946,11 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     cropFrame.addEventListener('touchmove', onTouchMove, { passive: false });
     cropFrame.addEventListener('touchend', onTouchEnd, { passive: true });
 
-    for (const corner of cropFrame.querySelectorAll('.p-corner')) {
-      corner.addEventListener('pointerdown', onCornerPointerDown);
-      corner.addEventListener('pointermove', onCornerPointerMove);
-      corner.addEventListener('pointerup', onCornerPointerUp);
-      corner.addEventListener('pointercancel', onCornerPointerUp);
+    for (const handleEl of cropFrame.querySelectorAll('.p-corner, .p-edge')) {
+      handleEl.addEventListener('pointerdown', onResizePointerDown);
+      handleEl.addEventListener('pointermove', onResizePointerMove);
+      handleEl.addEventListener('pointerup', onResizePointerUp);
+      handleEl.addEventListener('pointercancel', onResizePointerUp);
     }
   }
 
@@ -791,6 +962,7 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
   let curOffsetX = 0, curOffsetY = 0;
 
   function onPointerDown(e) {
+    if (window.innerWidth < 640) return;
     if (e.button !== 0) return;
     if (e.target.closest('button, a, input, select')) return;
 
@@ -876,6 +1048,7 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
   function closeStudio() {
     if (!open) return;
     open = false;
+    applyLens();
     avatar?.poseSelfie?.(false);
     closeAllPopovers();
     document.body.classList.remove('photo-mode');
@@ -901,6 +1074,13 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
   trigger.addEventListener('click', () => toggleStudio());
   closeBtn?.addEventListener('click', closeStudio);
   saveBtn?.addEventListener('click', handleSave);
+
+  quickFlipBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const next = angle === 'selfie' ? 'current' : 'selfie';
+    applyAngle(next);
+    sound?.play('click');
+  });
 
   const frameToggle = root.querySelector('[data-toggle-frame="mac"]');
   frameToggle?.addEventListener('click', () => {
@@ -982,12 +1162,14 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
   onLang(() => {
     if (open) {
       updateSceneCapsule();
+      updateQuickFlipBtn();
     }
   });
 
   window.addEventListener('resize', () => {
     if (open) {
-      updateCropFrameScale();
+      applyLens();
+      applyCropFrame();
       updateLiveMacBar();
     }
   });
