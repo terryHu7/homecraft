@@ -46,4 +46,10 @@ Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 
 <p align="center"><img src="docs/images/wechat-group.jpg" width="280" alt="Homecraft 微信共建群"></p>
 
+## Buy Me a Coffee
+
+<p align="center">
+  <img src="docs/images/wechat-sponsor.webp" width="160" alt="微信赞赏码">
+</p>
+
 ## 友情链接 [🔗 LINUX DO](https://linux.do)

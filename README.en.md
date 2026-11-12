@@ -42,4 +42,12 @@ For future updates, see the [update guide](engine/UPDATING.md).
 
 The portal lists personal websites and lets visitors travel between them, much like links between blogs.
 
+## Buy Me a Coffee
+
+<p align="center">
+  <a href="https://buymeacoffee.com/terryhu" target="_blank">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" width="180" alt="Buy Me A Coffee">
+  </a>
+</p>
+
 ## Links [🔗 LINUX DO](https://linux.do)
