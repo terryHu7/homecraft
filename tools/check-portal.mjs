@@ -201,6 +201,36 @@ try {
     assert.equal(await forged.evaluate(() => __home.worn.carried), false);
     assert.equal(new URL(forged.url()).hash, '');
     await forged.close();
+    // A one-way door ring: stepping on the glowing circle leaves for its
+    // single destination — no click, no list. The destination host is routed
+    // to this server's own fixture, so nothing online is read or changed.
+    await context.route('https://terryhu.cn/**', async route => {
+      // Serve the same site under the door's host: same path, same files, so
+      // the destination actually boots and the arrival can be asserted.
+      const url = new URL(route.request().url());
+      const response = await route.fetch({ url: base + url.pathname + url.search });
+      await route.fulfill({ response });
+    });
+    // The scrolling section reloaded the page, so arm the navigation hold again
+    // before stepping on the ring: the departure label must still be showing.
+    await page.evaluate(() => { window.__holdWorldNavigation = true; window.__releaseWorldNavigation = null; });
+    await page.evaluate(() => {
+      const h = __home, d = h.doors[0];
+      h.player.teleport(d.x, d.z, { look: [d.x + .1, d.z] });
+      h.rig.recenter(h.player);
+    });
+    assert.equal(await page.evaluate(() => __home.portal.busy), false, 'The ring leaves without the big portal walk');
+    await page.locator('#loading .bar[role="progressbar"]').waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForFunction(() => document.querySelector('#loading .loading-label')?.textContent.includes('Terry'));
+    await page.waitForFunction(() => typeof window.__releaseWorldNavigation === 'function');
+    await page.screenshot({ path: new URL(`${name}-ring.png`, out).pathname });
+    await page.evaluate(() => window.__releaseWorldNavigation());
+    await page.waitForURL(url => url.host === 'terryhu.cn', { timeout: 20000 });
+    await page.waitForFunction(() => window.__home?.player, null, { timeout: 60000 });
+    assert.equal(await page.evaluate(() => __home.worn.carried), true, 'The ring did not carry the skin');
+    assert.equal(new URL(page.url()).hash, '');
+    await page.goto(`${base}/`); await ready();
+
     // An ordinary blog with the door plugin (once): no Return on a direct
     // visit, into a world, and back out of the world's door to the blog,
     // whose Return chip carries the traveller on.
@@ -240,9 +270,10 @@ try {
       assert.equal(await page2.evaluate(() => __home.worn.carried), true);
       await page2.close();
     }
+
     assert.deepEqual(errors, []);
     const stats = recordedStats || await page.evaluate(() => __home.stats());
-    console.log(`PASS ${name}: portal click, one-click entry, walk-through, startup progress, carried skin, keyboard return, Back/Forward, empty/error/blocked, stale request, scrolling, forged link${name === 'computer' ? ', blog plugin' : ''}; ${JSON.stringify(stats)}`);
+    console.log(`PASS ${name}: portal click, one-click entry, walk-through, startup progress, carried skin, keyboard return, Back/Forward, empty/error/blocked, stale request, scrolling, forged link, door ring${name === 'computer' ? ', blog plugin' : ''}; ${JSON.stringify(stats)}`);
     await closeContext();
   }
 } catch (error) {

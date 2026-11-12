@@ -23,6 +23,7 @@
 | `intro` | One-line introduction, up to 120 characters, a string or `{ "zh": "…", "en": "…" }` |
 | `lang` | An array of `zh`, `en` |
 | `homecraft` | Whether the site supports the portal protocol; set to `true` after integration |
+| `doors` | Optional, the destinations of the site's one-way door rings (`DOORS` in `world/layout.js`): an array of up to 16 URLs. Other worlds read this to draw the world map's relationship lines, so keep it in sync with the layout. Malformed entries and the site itself are ignored |
 
 `logo` and `intro` may be left empty during local previews. Both are required when requesting a directory listing and can be supplied in the request form or in this file. AI agents must use information provided or confirmed by the user and leave missing fields empty.
 

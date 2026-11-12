@@ -42,6 +42,7 @@ const HUD = `
   <nav id="hotbar" aria-label="Dock"></nav>
   <div id="corner">
     <button id="webButton" aria-label="吐丝" data-en-label="Web" aria-pressed="false"><span></span></button>
+    <button id="worldMapButton" aria-label="世界地图" data-en-label="World map" aria-pressed="false"><span></span></button>
     <button id="flyButton" aria-label="飞行" aria-pressed="false"><span></span></button>
     <button id="viewButton" aria-label="第一人称" data-en-label="First person" aria-pressed="false"><span></span></button>
     <button id="moodButton" aria-label="天气与时段" aria-expanded="false" aria-controls="weatherMenu"><span></span><b></b></button>
@@ -71,6 +72,12 @@ const HUD = `
 <div id="bigmap" hidden>
   <canvas aria-label="大地图，点哪里就走到哪里" data-en-label="Map: tap anywhere to walk there"></canvas>
   <button class="close" aria-label="关闭地图" data-en-label="Close the map">×</button>
+</div>
+
+<div id="worldmap" hidden>
+  <canvas aria-label="世界地图：传送门网络的关系图" data-en-label="World map: the portal network as a graph"></canvas>
+  <button class="close" aria-label="关闭世界地图" data-en-label="Close the world map">×</button>
+  <p class="worldmap-status" role="status"></p>
 </div>
 
 <dialog id="panel" aria-labelledby="panelTitle">

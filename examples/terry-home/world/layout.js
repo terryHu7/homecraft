@@ -52,6 +52,13 @@ export const MAILBOX = { x: 5.0, z: 19.3, yaw: 0 };
 // faces the house (yaw π; 0 would face the sea), so from the terrace you walk
 // up to its face with the sea behind it, and visitors step out towards the house.
 export const PORTAL = { x: 8.5, z: 25.5, yaw: Math.PI };
+
+// A one-way door ring on the lawn east of the portal: step on it and the world
+// switches to its single destination, like a hyperlink. Mirror the targets in
+// homecraft.json's doors field so other worlds can draw the relationship.
+export const DOORS = [
+  { x: 14.5, z: 22, target: 'https://rsliyu.com/', name: 'rsliyu' },
+];
 // A two-block door in the garage's north wall, out to the back and the mountain.
 export const BACKDOOR = { x0: 13, x1: 15 };
 

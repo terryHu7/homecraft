@@ -14,6 +14,7 @@ import { createPetLife } from './world/pets.js';
 import { createAtmosphere } from './world/atmosphere.js';
 import { createWeatherFx } from './world/weather-fx.js';
 import { createMailbox } from './world/mailbox.js';
+import { createDoorRings } from './world/doorring.js';
 import { createWeather, timeOfDay, WEATHER_LABELS, TIME_LABELS, WEATHER_PRESETS } from './weather.js';
 import { createPlayer } from './world/player.js';
 import { createRig } from './world/rig.js';
@@ -28,6 +29,7 @@ import { createFlightPad } from './ui/flightpad.js';
 import { createPortal, arrival, visitWorld, isTravelling, placePortalControls } from './portal.js';
 import { wornSkin } from './traveller.js';
 import { createWorldList } from './ui/worlds.js';
+import { createWorldMap } from './ui/worldmap.js';
 import { setLoadingProgress as progress, finishLoading, hideLoading } from './ui/loading.js';
 import { mountHud } from './hud.js';
 import { t, nameOf, applyLang, onLang, langSwitch } from './lang.js';
@@ -130,6 +132,15 @@ async function boot() {
   // The mailbox and the portal add their footprints before the walkable grid is built.
   const mailbox = createMailbox({ stage, world });
   const portal = createPortal({ stage, world, onOpen: openPortal });
+  // The one-way doors: step on a ground ring, leave for its single destination.
+  const doorRings = createDoorRings({
+    stage,
+    onEnter(door) {
+      let host = door.target;
+      try { host = new URL(door.target).hostname; } catch { /* keep the raw target */ }
+      void visitWorld({ url: door.target, name: door.name || host, homecraft: true, preview: null });
+    },
+  });
   const nav = createNav(world.grid, world.obstacles);
   bootPhase = 'furniture-and-pets';
   const sound = createSound();
@@ -281,6 +292,13 @@ async function boot() {
   const workbench = createWorkbench(panel);
   // A note sent from the mailbox's page raises the flag on the mailbox itself.
   const mailboxForm = createMailboxForm({ onSent: () => mailbox.raiseFlag() });
+  // The world map: the portal network as a graph, door rings as the edges.
+  // Choosing a world there leaves the same way the list does. The panel is a
+  // modal dialog in the top layer, so close it before the map shows.
+  const worldMap = createWorldMap({
+    root: $('#worldmap'),
+    onChoose(world) { closePage(); depart(world); },
+  });
   const worldList = createWorldList({ onChoose(world) { closePage(); depart(world); } });
   // Standing at the portal, on foot: walk into it, seen from behind. From
   // anywhere else (the Dock, first person, flying), straight to loading.
@@ -350,7 +368,7 @@ async function boot() {
   }
   function openPortal() {
     if (isTravelling() || portal?.busy) return;
-    togglePhone(false); toggleWeatherMenu(false); minimap.toggleBig(false); rig.skipIntro();
+    togglePhone(false); toggleWeatherMenu(false); minimap.toggleBig(false); worldMap.close(); rig.skipIntro();
     openStation = 'portal'; panel.dataset.station = 'portal'; panel.dataset.kind = '';
     $('#panelTitle').textContent = t('传送门', 'Portal');
     panel.querySelector('header .icon').style.backgroundImage = `url(${icon('portal').url})`;
@@ -700,6 +718,19 @@ async function boot() {
   }
   viewButton.addEventListener('click', toggleView);
 
+  // ---------- World map button ----------
+  // The corner button beside the web one; M is the shortcut, Tab stays on the
+  // island's own big map.
+  const worldMapButton = $('#worldMapButton');
+  worldMapButton.querySelector('span').style.backgroundImage = `url(${icon('map').url})`;
+  worldMapButton.title = t('世界地图（M）', 'World map (M)');
+  worldMapButton.addEventListener('click', () => {
+    closePage();
+    worldMap.toggle();
+    worldMapButton.setAttribute('aria-pressed', String(worldMap.isOpen()));
+    sound.play('click');
+  });
+
   // ---------- Flight ----------
   // Keys: Space jumps, a double tap flies. The corner button does the same for
   // touch screens, where tapping a place then flies the player there. In the pool
@@ -777,7 +808,7 @@ async function boot() {
   const input = createInput(stage.renderer.domElement, {
     blocked: () => minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!portal?.busy,
     shortcutsBlocked: () => minimap.isBigOpen() || weatherMenuOpen() || isTravelling() || !!portal?.busy,
-    escape: () => { if (weatherMenuOpen()) toggleWeatherMenu(false, true); else if (minimap.isBigOpen()) minimap.toggleBig(false); else if (panel.open) closePage(); else if (phone.up) { if (!phone.back()) togglePhone(false); } else toggleWeb(false); },
+    escape: () => { if (weatherMenuOpen()) toggleWeatherMenu(false, true); else if (minimap.isBigOpen()) minimap.toggleBig(false); else if (worldMap.isOpen()) worldMap.close(); else if (panel.open) closePage(); else if (phone.up) { if (!phone.back()) togglePhone(false); } else toggleWeb(false); },
     interact: () => {
       const s = nearestTarget();
       if (s) { useTarget(s.id); return; }
@@ -792,7 +823,8 @@ async function boot() {
     jump: () => { rig.skipIntro(); player.jump(); },
     toggleFly,
     phone: () => togglePhone(),
-    map: () => minimap.toggleBig(),
+    map: () => { if (panel.open) closePage(); worldMap.toggle(); },
+    bigMap: () => minimap.toggleBig(),
     slot: n => hotbar.children[n - 1]?.click(),
     orbit: (dx, dy) => { rig.skipIntro(); rig.orbit(dx, dy); },
     zoom: f => rig.zoom(f),
@@ -912,7 +944,7 @@ async function boot() {
     requestAnimationFrame(loop);
     if (document.hidden) { last = now; return; }
     const elapsed = (now - last) / 1000;
-    const paused = minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling();
+    const paused = minimap.isBigOpen() || worldMap.isOpen() || panel.open || weatherMenuOpen() || isTravelling();
     if (paused && !wasPaused) { player.cancel(); input.clear(); }
     wasPaused = paused;
     // Panels pause movement, but the visible world keeps rendering every frame.
@@ -925,6 +957,7 @@ async function boot() {
     const fp = rig.firstPerson && !rig.introActive;
     player.update(dt, move, rig.yaw, fp);
     portal?.update(dt, player);
+    doorRings?.update(dt, player);
     rig.update(dt, player);
     stage.setClearance(rig.introActive ? stage.camera.position.distanceTo(player.pos) : 0);
     for (const pet of pets) pet.update(dt, stage.camera, player);
@@ -1001,6 +1034,8 @@ async function boot() {
   // Handy when poking at it from the console.
   window.__home = {
     stage, world, player, avatar, rig, nav, pets, cat, dog, extras, portal, worn, atmosphere, weatherFx, pool, weather, config, stats, setWeatherMode, getWeatherMode: () => weatherMode, setTimeMode, getTimeMode: () => timeMode, navigate, openPage, openPortal, go, setMood,
+    doors: doorRings ? L.DOORS : [],
+    worldMap: { isOpen: () => worldMap.isOpen(), nodes: () => worldMap.nodeCount() },
     teleport(x, z) { player.teleport(x, z); rig.recenter(player); },
     project(x, y, z) {
       const v = new THREE.Vector3(x, y, z).project(stage.camera);

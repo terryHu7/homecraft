@@ -73,6 +73,8 @@ The browser console provides the following debug APIs:
 | `__home.player.teleport(x, z)` | Move to specific coordinates |
 | `__home.setTimeMode('night')` | Switch time of day |
 | `__home.setWeatherMode('rain')` | Switch weather |
+| `__home.doors` | List the world's one-way door rings (`DOORS`) |
+| `__home.worldMap` | World map overlay state: `isOpen()` and `nodes()` (painted node count) |
 | `__home.rig.showcase([camX,Y,Z], [lookX,Y,Z])` | Lock camera position for screenshots |
 
 ## Coordinates
@@ -90,6 +92,7 @@ One block = 1 meter. x points east, z points south, y points up; the opening sho
 | `STATIONS` | ✓ | Array of stations, see below |
 | `MAILBOX` | | `{ x, z, yaw }`: position and facing of the mailbox prefab |
 | `PORTAL` | | `{ x, z, yaw }`: position and facing of the portal. Appears as a frameless blue vortex, ~1.7 m wide and ~2.6 m tall. yaw is one of 0, π/2, π, −π/2, where 0 faces south. Place on land with 3 m of clear space in front for arriving visitors |
+| `DOORS` | | Array of one-way doors `{ x, z, target, name?, yaw? }`: a small gate with a spinning vortex, standing over a glowing ground ring; stepping on the ring switches to its single `target` world — a hyperlink, unlike the list portal. The name on the sign and the logo at the vortex's centre load from the destination's `homecraft.json` (falling back to `name` or the hostname, and the name's initial). `yaw` snaps to 90° like `PORTAL`. Mirror the `target`s in `homecraft.json`'s `doors` field so other worlds can draw the relationship |
 | `PETS` | | `{ cat: {…}, dog: {…} }`: `anchors: [[x,z],…]` are roaming positions; `within(x,z)` can restrict roaming area; `home: [x,z]` is the initial resting position |
 | `HOUSE` | | `{ x0, x1, z0, z1, height }`: enterable house. When the character enters, walls blocking the camera (`wallN/S/E/W` groups) and the roof (`roof` group) auto-hide. The roof is walkable; doorways need 2 blocks wide and 3 blocks tall; when taking off indoors, the character exits via the `EXIT` / `DOORWAY` defined exits |
 | `POOL` | | `{ x0, x1, z0, z1, water, bed }`: swimmable pool (loads pool.js). See also `POOL_LADDER`, `POOL_LAMPS` |
