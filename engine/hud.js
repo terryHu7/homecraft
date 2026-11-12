@@ -80,12 +80,12 @@ const HUD = `
             <span class="live-mac-domain"></span>
           </div>
         </div>
-        <div class="photo-corners" aria-hidden="true">
-          <span class="p-corner tl"></span>
-          <span class="p-corner tr"></span>
-          <span class="p-corner bl"></span>
-          <span class="p-corner br"></span>
-          <span class="p-center-mark"></span>
+        <div class="photo-corners">
+          <span class="p-corner tl" title="按住拖拽调节大小" data-en-title="Drag to resize"></span>
+          <span class="p-corner tr" title="按住拖拽调节大小" data-en-title="Drag to resize"></span>
+          <span class="p-corner bl" title="按住拖拽调节大小" data-en-title="Drag to resize"></span>
+          <span class="p-corner br" title="按住拖拽调节大小" data-en-title="Drag to resize"></span>
+          <span class="p-center-mark" aria-hidden="true"></span>
         </div>
         <div class="photo-live-watermark" aria-hidden="true">
           <img class="live-wm-logo" alt="" />

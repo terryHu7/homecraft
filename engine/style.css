@@ -813,6 +813,11 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
   transition: none !important;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.52), inset 0 0 0 1.5px rgba(255, 255, 255, 0.65);
 }
+.photo-crop-frame.is-resizing {
+  cursor: nwse-resize !important;
+  transition: none !important;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
 .photo-frame-handle {
   position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
   width: 32px; height: 10px; display: flex; align-items: center; justify-content: center;
@@ -835,9 +840,10 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 }
 
 .photo-live-mac-bar {
-  position: absolute; top: 0; left: 0; right: 0; height: 24px;
+  position: absolute; top: 0; left: 0; right: 0;
+  height: var(--photo-bar-h, 38px);
   background: #2a2a2c; display: flex; align-items: center; justify-content: center;
-  z-index: 5; pointer-events: none; border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  z-index: 5; pointer-events: none; border-bottom: 1px solid rgba(0, 0, 0, 0.45);
   box-sizing: border-box;
 }
 .photo-live-mac-bar[hidden] {
@@ -845,43 +851,61 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 }
 
 .live-mac-traffic {
-  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-  display: flex; gap: 5px; align-items: center;
+  position: absolute; left: calc(14px * var(--photo-ui-scale, 1)); top: 50%; transform: translateY(-50%);
+  display: flex; gap: calc(7px * var(--photo-ui-scale, 1)); align-items: center;
 }
 .live-mac-traffic span {
-  width: 7px; height: 7px; border-radius: 50%; display: block;
+  width: calc(11px * var(--photo-ui-scale, 1)); height: calc(11px * var(--photo-ui-scale, 1));
+  border-radius: 50%; display: block;
 }
 .live-dot-close { background: #ff5f57; box-shadow: inset 0 0 0 0.5px #e0443e; }
 .live-dot-min { background: #febc2e; box-shadow: inset 0 0 0 0.5px #dea123; }
 .live-dot-max { background: #28c840; box-shadow: inset 0 0 0 0.5px #1aab29; }
 
 .live-mac-capsule {
-  background: #38383a; border-radius: 4px; padding: 0 12px; height: 16px;
+  background: #38383a; border-radius: calc(6px * var(--photo-ui-scale, 1));
+  padding: 0 calc(16px * var(--photo-ui-scale, 1)); height: calc(26px * var(--photo-ui-scale, 1));
   display: inline-flex; align-items: center; justify-content: center;
-  font: 500 11px/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-  color: rgba(250, 250, 255, 0.92); letter-spacing: 0.1px; max-width: 48%;
-  border: 1px solid rgba(255, 255, 255, 0.05); box-sizing: border-box;
+  font: 500 calc(12.5px * var(--photo-ui-scale, 1))/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  color: rgba(250, 250, 255, 0.94); letter-spacing: 0.1px; max-width: 52%;
+  border: 1px solid rgba(255, 255, 255, 0.08); box-sizing: border-box;
 }
 .live-mac-domain { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .photo-corners {
-  position: absolute; inset: 0; pointer-events: none; z-index: 4;
+  position: absolute; inset: 0; pointer-events: none; z-index: 12;
 }
 .p-corner {
-  position: absolute; width: 16px; height: 16px;
-  border-color: rgba(255, 255, 255, 0.85); border-style: solid;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.75));
-  transition: top .2s ease;
+  position: absolute; width: 32px; height: 32px;
+  pointer-events: auto; touch-action: none; box-sizing: border-box;
 }
-.p-corner.tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; border-top-left-radius: 3px; }
-.p-corner.tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; border-top-right-radius: 3px; }
-.p-corner.bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; border-bottom-left-radius: 3px; }
-.p-corner.br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; border-bottom-right-radius: 3px; }
+.p-corner::after {
+  content: ''; position: absolute;
+  width: 16px; height: 16px;
+  border-color: rgba(255, 255, 255, 0.88); border-style: solid;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+  transition: transform .15s ease, border-color .15s ease;
+}
+.p-corner:hover::after {
+  border-color: #ffffff;
+  transform: scale(1.18);
+}
+.p-corner.tl { top: 0; left: 0; cursor: nwse-resize; }
+.p-corner.tl::after { top: 10px; left: 10px; border-width: 2.5px 0 0 2.5px; border-top-left-radius: 3px; }
 
-/* When Mac bar is visible, frame the 3D scene neatly below the 24px bar */
-.photo-live-mac-bar:not([hidden]) ~ .photo-corners .p-corner.tl,
-.photo-live-mac-bar:not([hidden]) ~ .photo-corners .p-corner.tr {
-  top: 32px;
+.p-corner.tr { top: 0; right: 0; cursor: nesw-resize; }
+.p-corner.tr::after { top: 10px; right: 10px; border-width: 2.5px 2.5px 0 0; border-top-right-radius: 3px; }
+
+.p-corner.bl { bottom: 0; left: 0; cursor: nesw-resize; }
+.p-corner.bl::after { bottom: 10px; left: 10px; border-width: 0 0 2.5px 2.5px; border-bottom-left-radius: 3px; }
+
+.p-corner.br { bottom: 0; right: 0; cursor: nwse-resize; }
+.p-corner.br::after { bottom: 10px; right: 10px; border-width: 0 2.5px 2.5px 0; border-bottom-right-radius: 3px; }
+
+/* When Mac bar is visible, frame the 3D scene neatly below the bar */
+.photo-live-mac-bar:not([hidden]) ~ .photo-corners .p-corner.tl::after,
+.photo-live-mac-bar:not([hidden]) ~ .photo-corners .p-corner.tr::after {
+  top: calc(var(--photo-bar-h, 38px) + 8px);
 }
 
 /* Subtle camera center focus reticle */
@@ -892,7 +916,7 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
   transition: top .2s ease;
 }
 .photo-live-mac-bar:not([hidden]) ~ .photo-corners .p-center-mark {
-  top: calc(50% + 12px);
+  top: calc(50% + var(--photo-bar-h, 38px) / 2);
 }
 .p-center-mark::before, .p-center-mark::after {
   content: ''; position: absolute; background: rgba(255, 255, 255, 0.9); border-radius: 1px;
@@ -1005,11 +1029,15 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 
 /* Live Viewfinder Watermark (所见即所得: in-viewfinder real-time match, micro and subtle) */
 .photo-live-watermark {
-  position: absolute; right: 28px; bottom: 24px;
-  display: inline-flex; align-items: center; gap: 4px;
-  height: 20px; padding: 0 8px 0 5px;
-  background: rgba(10, 12, 14, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  position: absolute;
+  right: calc(28px * var(--photo-ui-scale, 1));
+  bottom: calc(24px * var(--photo-ui-scale, 1));
+  display: inline-flex; align-items: center;
+  gap: calc(5px * var(--photo-ui-scale, 1));
+  height: calc(22px * var(--photo-ui-scale, 1));
+  padding: 0 calc(9px * var(--photo-ui-scale, 1)) 0 calc(6px * var(--photo-ui-scale, 1));
+  background: rgba(10, 12, 14, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 9999px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   pointer-events: none; user-select: none;
@@ -1019,10 +1047,12 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
   display: none !important;
 }
 .live-wm-logo {
-  width: 12px; height: 12px; object-fit: contain; display: block;
+  width: calc(13px * var(--photo-ui-scale, 1));
+  height: calc(13px * var(--photo-ui-scale, 1));
+  object-fit: contain; display: block;
 }
 .live-wm-text {
-  font: 600 10px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  font: 600 calc(11px * var(--photo-ui-scale, 1))/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   color: #ffffff; letter-spacing: 0.2px;
 }
 
@@ -1175,12 +1205,12 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
 }
 
 #photoToast {
-  position: fixed; top: 40px; left: 50%; transform: translateX(-50%); z-index: 99;
+  position: fixed; bottom: 104px; left: 50%; transform: translateX(-50%); z-index: 99;
   background: rgba(18, 20, 22, 0.94); color: #ffffff; padding: 9px 20px; font: 600 15px var(--text);
   border-radius: 20px; box-shadow: 0 4px 16px rgba(0, 0, 0, .45), 0 0 0 1px rgba(255, 255, 255, .15);
   pointer-events: none; animation: photoToastFade .2s ease-out;
 }
 @keyframes photoToastFade {
-  0% { opacity: 0; transform: translate(-50%, -8px); }
+  0% { opacity: 0; transform: translate(-50%, 8px); }
   100% { opacity: 1; transform: translate(-50%, 0); }
 }

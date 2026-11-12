@@ -254,23 +254,23 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     }
   }
 
-  // Draw authentic slender macOS window bar (100% WYSIWYG proportional rendering)
-  function drawMacWindowBar(ctx, width, height, domainText, scale = 1) {
+  // Draw authentic macOS window bar (100% WYSIWYG proportional rendering)
+  function drawMacWindowBar(ctx, width, height, domainText, s = 1) {
     // 1. Sleek macOS dark mode background
     ctx.fillStyle = '#2a2a2c';
     ctx.fillRect(0, 0, width, height);
 
     // Subtle bottom border
-    const borderH = Math.max(1, Math.round(1 * scale));
+    const borderH = Math.max(1, Math.round(1 * s));
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.fillRect(0, height - borderH, width, borderH);
 
     // 2. Traffic light dots (Apple Retina colors & subtle border)
-    // On screen: left: 10px, dots: 7px diameter (r = 3.5px), gap: 5px
+    // On screen baseline: left: 14px, dot diameter: 11px (r = 5.5px), gap: 7px
     const cy = Math.round(height / 2);
-    const r = Math.max(3.5, Math.round(3.5 * scale));
-    const startX = Math.round(10 * scale) + r;
-    const gap = Math.round(5 * scale) + r * 2;
+    const r = Math.max(3.5, Math.round(5.5 * s));
+    const startX = Math.round(14 * s) + r;
+    const gap = Math.round(7 * s) + r * 2;
 
     const dots = [
       { fill: '#ff5f57', stroke: '#e0443e' },
@@ -283,35 +283,35 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fillStyle = dot.fill;
       ctx.fill();
-      ctx.lineWidth = Math.max(1, Math.round(0.6 * scale));
+      ctx.lineWidth = Math.max(1, Math.round(0.6 * s));
       ctx.strokeStyle = dot.stroke;
       ctx.stroke();
     });
 
     // 3. Centered address capsule
-    // On screen: height: 16px, padding: 0 12px, border-radius: 4px, font: 11px
-    const capsuleH = Math.round(16 * scale);
+    // On screen baseline: height: 26px, padding: 0 16px, border-radius: 6px, font: 12.5px
+    const capsuleH = Math.round(26 * s);
     const capsuleY = Math.round((height - capsuleH) / 2);
-    const fontSize = Math.max(11, Math.round(11 * scale));
+    const fontSize = Math.max(11, Math.round(12.5 * s));
     ctx.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif`;
     const textW = ctx.measureText(domainText).width;
-    const padX = Math.round(12 * scale);
-    const capsuleW = Math.min(Math.round(width * 0.48), Math.round(textW + padX * 2));
+    const padX = Math.round(16 * s);
+    const capsuleW = Math.min(Math.round(width * 0.52), Math.round(textW + padX * 2));
     const capsuleX = Math.round((width - capsuleW) / 2);
-    const radius = Math.round(4 * scale);
+    const radius = Math.round(6 * s);
 
     ctx.beginPath();
     ctx.roundRect(capsuleX, capsuleY, capsuleW, capsuleH, radius);
     ctx.fillStyle = '#38383a';
     ctx.fill();
-    ctx.lineWidth = Math.max(1, Math.round(1 * scale));
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.lineWidth = Math.max(1, Math.round(1 * s));
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.stroke();
 
     // 4. Centered domain text inside capsule
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(250, 250, 255, 0.92)';
+    ctx.fillStyle = 'rgba(250, 250, 255, 0.94)';
     ctx.fillText(domainText, width / 2, height / 2);
   }
 
@@ -368,16 +368,16 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
   }
 
   // ---------- Homecraft Logo Watermark (matching live viewfinder, 100% WYSIWYG) ----------
-  function drawWatermark(ctx, width, height, scale = 1) {
-    // On screen: height: 20px, right: 28px, bottom: 24px, logo: 12px, font: 10px, pad: 5px/8px, gap: 4px
-    const badgeH = Math.round(20 * scale);
-    const padLeft = Math.round(5 * scale);
-    const padRight = Math.round(8 * scale);
-    const gap = Math.round(4 * scale);
-    const iconSize = Math.round(12 * scale);
-    const fontSize = Math.max(10, Math.round(10 * scale));
-    const marginRight = Math.round(28 * scale);
-    const marginBottom = Math.round(24 * scale);
+  function drawWatermark(ctx, width, height, s = 1) {
+    // On screen baseline: height: 22px, right: 28px, bottom: 24px, logo: 13px, font: 11px, pad: 6px/9px, gap: 5px
+    const badgeH = Math.round(22 * s);
+    const padLeft = Math.round(6 * s);
+    const padRight = Math.round(9 * s);
+    const gap = Math.round(5 * s);
+    const iconSize = Math.round(13 * s);
+    const fontSize = Math.max(10, Math.round(11 * s));
+    const marginRight = Math.round(28 * s);
+    const marginBottom = Math.round(24 * s);
 
     ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif`;
     const label = 'homecraft';
@@ -391,10 +391,10 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     // Semi-transparent dark rounded badge matching minimap credit
     ctx.beginPath();
     ctx.roundRect(x, y, pillW, pillH, pillH / 2);
-    ctx.fillStyle = 'rgba(10, 12, 14, 0.72)';
+    ctx.fillStyle = 'rgba(10, 12, 14, 0.75)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = Math.max(1, Math.round(1 * scale));
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+    ctx.lineWidth = Math.max(1, Math.round(1 * s));
     ctx.stroke();
 
     // 3D Block Logo
@@ -441,6 +441,10 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     const frameH = fRect.height || targetH;
     const scale = targetW / frameW;
 
+    // Scale UI elements based on live crop frame scale factor
+    const uiScale = parseFloat(cropFrame?.style.getPropertyValue('--photo-ui-scale')) || 1.0;
+    const effectiveScale = uiScale * scale;
+
     const outCanvas = document.createElement('canvas');
     outCanvas.width = targetW;
     outCanvas.height = targetH;
@@ -486,14 +490,14 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     // 2. Draw Mac bar if enabled (proportionally scaled to match on-screen viewfinder)
     if (withMacFrame) {
       const liveBar = root.querySelector('.photo-live-mac-bar');
-      const liveBarH = (liveBar && liveBar.getBoundingClientRect().height) || 24;
+      const liveBarH = (liveBar && liveBar.getBoundingClientRect().height) || (38 * uiScale);
       const exportBarH = Math.round(liveBarH * scale);
-      drawMacWindowBar(ctx, targetW, exportBarH, getSiteDomain(), scale);
+      drawMacWindowBar(ctx, targetW, exportBarH, getSiteDomain(), effectiveScale);
     }
 
     // 3. Draw branding watermark (proportionally scaled to match on-screen viewfinder)
     await loadHomecraftLogo();
-    drawWatermark(ctx, targetW, targetH, scale);
+    drawWatermark(ctx, targetW, targetH, effectiveScale);
 
     root.classList.remove('capturing');
 
@@ -556,15 +560,104 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     }
   }
 
-  // ---------- Draggable Viewfinder Crop Frame ----------
+  // ---------- Resizable & Draggable Viewfinder Crop Frame ----------
   const cropFrame = root.querySelector('.photo-crop-frame');
   let isMovingFrame = false;
   let frameStartX = 0, frameStartY = 0;
   let frameOffsetX = 0, frameOffsetY = 0;
 
+  // Corner resize state
+  let isResizingFrame = false;
+  let resizeCorner = null; // { isLeft: boolean, isTop: boolean }
+  let resizeStartPointerX = 0, resizeStartPointerY = 0;
+  let resizeStartW = 0, resizeStartH = 0;
+  let resizeStartOffsetX = 0, resizeStartOffsetY = 0;
+  let resizeStartRect = null;
+
+  function updateCropFrameScale() {
+    if (!cropFrame) return;
+    const fRect = cropFrame.getBoundingClientRect();
+    const w = fRect.width || (ratio === '9:16' ? 440 : 920);
+    const baseRef = ratio === '9:16' ? 440 : 920;
+    const uiScale = Math.max(0.65, Math.min(1.5, w / baseRef));
+    const barH = Math.round(38 * uiScale);
+    cropFrame.style.setProperty('--photo-ui-scale', uiScale.toFixed(3));
+    cropFrame.style.setProperty('--photo-bar-h', `${barH}px`);
+  }
+
+  function onCornerPointerDown(e) {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    const corner = e.target.closest('.p-corner');
+    if (!corner || !cropFrame) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const isLeft = corner.classList.contains('tl') || corner.classList.contains('bl');
+    const isTop = corner.classList.contains('tl') || corner.classList.contains('tr');
+
+    const fRect = cropFrame.getBoundingClientRect();
+    isResizingFrame = true;
+    resizeCorner = { isLeft, isTop };
+    resizeStartPointerX = e.clientX;
+    resizeStartPointerY = e.clientY;
+    resizeStartW = fRect.width;
+    resizeStartH = fRect.height;
+    resizeStartOffsetX = frameOffsetX;
+    resizeStartOffsetY = frameOffsetY;
+    resizeStartRect = { left: fRect.left, top: fRect.top, right: fRect.right, bottom: fRect.bottom };
+
+    cropFrame.classList.add('is-resizing');
+    corner.setPointerCapture(e.pointerId);
+  }
+
+  function onCornerPointerMove(e) {
+    if (!isResizingFrame || !cropFrame || !resizeStartRect) return;
+
+    const aspect = ratio === '16:9' ? (16 / 9) : (ratio === '9:16' ? (9 / 16) : 1);
+    const deltaX = (e.clientX - resizeStartPointerX) * (resizeCorner.isLeft ? -1 : 1);
+    const deltaY = (e.clientY - resizeStartPointerY) * (resizeCorner.isTop ? -1 : 1);
+
+    // Project onto current aspect ratio for smooth diagonal tracking
+    const dwTotal = (deltaX + deltaY * aspect) / 2;
+
+    const minW = ratio === '9:16' ? 240 : 360;
+
+    // Boundary constraints: ensure the crop frame never extends outside viewport margins
+    const fixedX = resizeCorner.isLeft ? resizeStartRect.right : resizeStartRect.left;
+    const fixedY = resizeCorner.isTop ? resizeStartRect.bottom : resizeStartRect.top;
+    const availW = resizeCorner.isLeft ? (fixedX - 16) : (window.innerWidth - 16 - fixedX);
+    const availH = resizeCorner.isTop ? (fixedY - 16) : (window.innerHeight - 84 - fixedY);
+    const boundaryMaxW = Math.max(minW, Math.min(availW, availH * aspect));
+    const maxW = Math.min(window.innerWidth - 32, (window.innerHeight - 84) * aspect, boundaryMaxW);
+
+    const newW = Math.max(minW, Math.min(maxW, resizeStartW + dwTotal));
+    const newH = newW / aspect;
+    const dw = newW - resizeStartW;
+    const dh = newH - resizeStartH;
+
+    // Anchor the opposite corner in place during drag
+    frameOffsetX = resizeStartOffsetX + (resizeCorner.isLeft ? -dw / 2 : dw / 2);
+    frameOffsetY = resizeStartOffsetY + (resizeCorner.isTop ? -dh / 2 : dh / 2);
+
+    cropFrame.style.width = `${Math.round(newW)}px`;
+    cropFrame.style.height = `${Math.round(newH)}px`;
+    cropFrame.style.transform = `translate3d(${Math.round(frameOffsetX)}px, ${Math.round(frameOffsetY)}px, 0)`;
+
+    updateCropFrameScale();
+  }
+
+  function onCornerPointerUp(e) {
+    if (!isResizingFrame || !cropFrame) return;
+    isResizingFrame = false;
+    resizeCorner = null;
+    cropFrame.classList.remove('is-resizing');
+    try { e.target.releasePointerCapture(e.pointerId); } catch {}
+  }
+
   function onFramePointerDown(e) {
-    if (e.button !== 0) return;
-    if (e.target.closest('.live-mac-traffic, button, a')) return;
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    if (e.target.closest('.p-corner, .live-mac-traffic, button, a')) return;
 
     isMovingFrame = true;
     frameStartX = e.clientX - frameOffsetX;
@@ -610,7 +703,65 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
   function resetCropFramePosition() {
     frameOffsetX = 0;
     frameOffsetY = 0;
-    if (cropFrame) cropFrame.style.transform = '';
+    if (cropFrame) {
+      cropFrame.style.width = '';
+      cropFrame.style.height = '';
+      cropFrame.style.transform = '';
+      updateCropFrameScale();
+    }
+  }
+
+  function onFrameWheel(e) {
+    if ((e.ctrlKey || e.metaKey || e.altKey) && cropFrame) {
+      e.preventDefault();
+      const fRect = cropFrame.getBoundingClientRect();
+      const aspect = ratio === '16:9' ? (16 / 9) : (ratio === '9:16' ? (9 / 16) : 1);
+      const minW = ratio === '9:16' ? 240 : 360;
+      const maxW = Math.min(window.innerWidth - 32, (window.innerHeight - 80) * aspect);
+      const factor = e.deltaY < 0 ? 1.04 : 0.96;
+      const newW = Math.max(minW, Math.min(maxW, fRect.width * factor));
+      const newH = newW / aspect;
+      cropFrame.style.width = `${Math.round(newW)}px`;
+      cropFrame.style.height = `${Math.round(newH)}px`;
+      updateCropFrameScale();
+    }
+  }
+
+  // Touch pinch-to-zoom on crop frame
+  let touchPinchDist = 0;
+  let touchStartW = 0;
+
+  function onTouchStart(e) {
+    if (e.touches.length === 2 && cropFrame) {
+      const p1 = e.touches[0];
+      const p2 = e.touches[1];
+      touchPinchDist = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
+      touchStartW = cropFrame.getBoundingClientRect().width;
+    }
+  }
+
+  function onTouchMove(e) {
+    if (e.touches.length === 2 && cropFrame && touchPinchDist > 0) {
+      const p1 = e.touches[0];
+      const p2 = e.touches[1];
+      const dist = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
+      const aspect = ratio === '16:9' ? (16 / 9) : (ratio === '9:16' ? (9 / 16) : 1);
+      const minW = ratio === '9:16' ? 240 : 360;
+      const maxW = Math.min(window.innerWidth - 32, (window.innerHeight - 80) * aspect);
+      const scaleFactor = dist / touchPinchDist;
+      const newW = Math.max(minW, Math.min(maxW, touchStartW * scaleFactor));
+      const newH = newW / aspect;
+      cropFrame.style.width = `${Math.round(newW)}px`;
+      cropFrame.style.height = `${Math.round(newH)}px`;
+      updateCropFrameScale();
+      e.preventDefault();
+    }
+  }
+
+  function onTouchEnd(e) {
+    if (e.touches.length < 2) {
+      touchPinchDist = 0;
+    }
   }
 
   if (cropFrame) {
@@ -619,6 +770,17 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
     cropFrame.addEventListener('pointerup', onFramePointerUp);
     cropFrame.addEventListener('pointercancel', onFramePointerUp);
     cropFrame.addEventListener('dblclick', () => resetCropFramePosition());
+    cropFrame.addEventListener('wheel', onFrameWheel, { passive: false });
+    cropFrame.addEventListener('touchstart', onTouchStart, { passive: true });
+    cropFrame.addEventListener('touchmove', onTouchMove, { passive: false });
+    cropFrame.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    for (const corner of cropFrame.querySelectorAll('.p-corner')) {
+      corner.addEventListener('pointerdown', onCornerPointerDown);
+      corner.addEventListener('pointermove', onCornerPointerMove);
+      corner.addEventListener('pointerup', onCornerPointerUp);
+      corner.addEventListener('pointercancel', onCornerPointerUp);
+    }
   }
 
   // ---------- Draggable Control Bar ----------
@@ -824,7 +986,10 @@ export function createPhotoStudio({ stage, world, rig, player, avatar = null, so
   });
 
   window.addEventListener('resize', () => {
-    if (open) updateLiveMacBar();
+    if (open) {
+      updateCropFrameScale();
+      updateLiveMacBar();
+    }
   });
 
   return {
