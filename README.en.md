@@ -45,8 +45,8 @@ The portal lists personal websites and lets visitors travel between them, much l
 ## Buy Me a Coffee
 
 <p align="center">
-  <a href="https://ifdian.net/a/terryhu" target="_blank">
-    <img src="https://img.shields.io/badge/Support_on-Afdian-946ce6?style=for-the-badge" height="38" alt="Support on Afdian">
+  <a href="https://buymeacoffee.com/terryhu" target="_blank">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" width="180" alt="Buy Me A Coffee">
   </a>
 </p>
 
