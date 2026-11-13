@@ -49,8 +49,7 @@ Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 ## Buy Me a Coffee
 
 <p align="center">
-  <img src="docs/images/wechat-sponsor.webp" width="160" alt="微信赞赏码"><br>
-  <sub>微信扫码赞赏 · <a href="https://ifdian.net/a/terryhu" target="_blank">爱发电赞助 ↗</a></sub>
+  <img src="docs/images/wechat-sponsor.webp" width="160" alt="微信赞赏码">
 </p>
 
 ## 友情链接 [🔗 LINUX DO](https://linux.do)
