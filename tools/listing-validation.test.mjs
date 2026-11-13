@@ -33,7 +33,8 @@ test('settings and preview URLs cannot bypass the directory schema',()=>{
 test('logo checks accept the shipped image and bound streamed responses',async()=>{
   const original=globalThis.fetch;
   try {
-    globalThis.fetch=async()=>new Response(readFileSync(new URL('../assets/favicon.png',import.meta.url)),{headers:{'content-type':'image/png'}});
+    const templateLogo = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABPklEQVR4nO3bPUpDQRTF8X8OF8QuGwg2LkBtRXADWYqlC7B2OdmAENKqC7ARN2AnVlrPFTIME32JZ37dfW/uYVLcvA94MAyDs1k+sFicfPGPvb29Fr9ZmBPmhLmoLVjen3HIVrfPW88Lc8KcMBetDZvVR1FfLo8Pqj8T5oQ5YS5aG3pnbur+TJgT5oS56L3u5vM388+ifryab12ftfbX9lMjzAlzwlzUFuSZZF3WG4629l+s38u6HOmq2n9M3k/Ov6vkC3PCnDAXvQE/ZjJ5eHop6uvz073KF+aEOWEuWhtaZ651Jn87PxPmhDlhLlobemdu6vxMmBPmhLnYdWDvvflf5wtzwpwwF7sO3Pd7/0yYE+aEuZj6ut6bN94JdhLmhLnY9xmtGc8CnYQ5YW6WD4xvhswIc5p6A8MwDEzoG4wsW1tHx5PjAAAAAElFTkSuQmCC', 'base64');
+    globalThis.fetch=async()=>new Response(templateLogo,{headers:{'content-type':'image/png'}});
     assert.deepEqual(await inspectLogo(entry.logo),{status:'pass',template:true});
     globalThis.fetch=async()=>new Response(new Uint8Array(102401),{headers:{'content-type':'image/png'}});
     assert.equal((await inspectLogo(entry.logo)).status,'fail');

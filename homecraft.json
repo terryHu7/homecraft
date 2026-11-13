@@ -2,7 +2,7 @@
   "version": 1,
   "name": "My Home",
   "url": "",
-  "logo": "assets/favicon.png",
+  "logo": "engine/assets/homecraft-logo.png",
   "intro": "",
   "lang": ["zh", "en"],
   "homecraft": true
