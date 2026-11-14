@@ -46,7 +46,7 @@ Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 
 <p align="center"><img src="docs/images/wechat-group.jpg" width="280" alt="Homecraft 俱乐部"></p>
 
-## Buy Me a Coffee
+## 微信赞赏码
 
 <p align="center">
   <img src="docs/images/wechat-sponsor.webp" width="160" alt="微信赞赏码">
