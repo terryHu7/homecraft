@@ -1,0 +1,16 @@
+{
+  "name": "CailGainey",
+  "url": "https://cailgainey.us.ci/",
+  "owner": "CailGainey",
+  "lang": [
+    "zh",
+    "en"
+  ],
+  "homecraft": true,
+  "added": "2026-11-15",
+  "intro": {
+    "zh": "一座可以漫游的个人门户，收集作品、文章、数据与生活，配有两层工作室和户外运动空间。",
+    "en": "A walkable personal portal for projects, writing, data and life, with a two-level studio and outdoor sports spaces."
+  },
+  "logo": "https://cailgainey.us.ci/engine/assets/homecraft-logo-128.png"
+}
