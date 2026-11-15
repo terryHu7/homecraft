@@ -45,9 +45,16 @@ The portal lists personal websites and lets visitors travel between them, much l
 ## Buy Me a Coffee
 
 <p align="center">
-  <a href="https://l.creem.io/homecraft" target="_blank">
-    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" width="180" alt="Buy Me A Coffee">
+  <a href="https://ko-fi.com/terryhu" target="_blank">
+    <img src="https://storage.ko-fi.com/cdn/kofi5.png" height="38" alt="Ko-fi">
   </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://l.creem.io/homecraft" target="_blank">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" height="38" alt="Buy Me a Coffee">
+  </a>
+</p>
+<p align="center">
+  <sub>PayPal / Ko-fi &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Card / Apple Pay</sub>
 </p>
 
 ## Links [🔗 LINUX DO](https://linux.do)
