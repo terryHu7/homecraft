@@ -123,7 +123,7 @@ body.quiet #hud { opacity: 0; pointer-events: none; transition: opacity 1.6s eas
 }
 #corner button:hover { background: var(--btn-hover); }
 #corner button span { width: 32px; height: 32px; image-rendering: pixelated; background: center / contain no-repeat; }
-#viewButton[aria-pressed="true"], #webButton[aria-pressed="true"], #flyButton[aria-pressed="true"] { background: var(--accent); }
+#viewButton[aria-pressed="true"], #webButton[aria-pressed="true"], #flyButton[aria-pressed="true"], #photoButton[aria-pressed="true"] { background: var(--accent); }
 #webButton[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--line), 0 0 0 4px #e8352b, inset 2px 2px 0 rgba(255, 255, 255, .32), inset -2px -3px 0 rgba(0, 0, 0, .38); }
 #moodButton { position: relative; }
 #moodButton b { position: absolute; right: -4px; bottom: -6px; padding: 1px 3px; font: 600 11px/1 var(--text); color: #fff; background: rgba(12, 23, 20, .85); text-shadow: 1px 1px 0 #000; pointer-events: none; }
@@ -798,3 +798,600 @@ dialog#panel[data-station="portal"] { width: min(620px, calc(100vw - 40px)); hei
 }
 #debugStats b { font-weight: 600; }
 #debugStats .over { color: #ff7a6b; }
+
+/* ---------- Photo Studio ---------- */
+body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #corner, #weatherMenu, #debugStats, #phone, .hc-controls, #portalButton, .portal-return) {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#photoStudio {
+  position: fixed; inset: 0; z-index: 90; pointer-events: none;
+}
+#photoStudio.capturing {
+  visibility: hidden !important;
+}
+
+.photo-viewfinder {
+  position: absolute; inset: 0; pointer-events: none;
+  overflow: hidden;
+}
+.photo-crop-frame {
+  position: absolute; top: 0; left: 0;
+  display: flex; flex-direction: column; overflow: visible;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.44), inset 0 0 0 1px rgba(255, 255, 255, 0.32);
+  border-radius: 8px; pointer-events: auto; cursor: grab;
+  touch-action: none; user-select: none;
+  box-sizing: border-box;
+}
+.photo-crop-frame.is-moving {
+  cursor: grabbing !important;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.52), inset 0 0 0 1.5px rgba(255, 255, 255, 0.65);
+}
+.photo-crop-frame.is-resizing {
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+.photo-frame-handle {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  width: 32px; height: 10px; display: flex; align-items: center; justify-content: center;
+  z-index: 6; pointer-events: none; opacity: 0.7;
+}
+.photo-live-mac-bar:not([hidden]) ~ .photo-frame-handle {
+  display: none;
+}
+.frame-pill {
+  width: 28px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.4);
+}
+
+.photo-live-mac-bar {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: var(--photo-bar-h, 38px);
+  background: #2a2a2c; display: flex; align-items: center; justify-content: center;
+  z-index: 5; pointer-events: none; border-bottom: 1px solid rgba(0, 0, 0, 0.45);
+  border-top-left-radius: 8px; border-top-right-radius: 8px;
+  box-sizing: border-box;
+}
+.photo-live-mac-bar[hidden] {
+  display: none !important;
+}
+
+.live-mac-traffic {
+  position: absolute; left: calc(14px * var(--photo-ui-scale, 1)); top: 50%; transform: translateY(-50%);
+  display: flex; gap: calc(7px * var(--photo-ui-scale, 1)); align-items: center;
+}
+.live-mac-traffic span {
+  width: calc(11px * var(--photo-ui-scale, 1)); height: calc(11px * var(--photo-ui-scale, 1));
+  border-radius: 50%; display: block;
+}
+.live-dot-close { background: #ff5f57; box-shadow: inset 0 0 0 0.5px #e0443e; }
+.live-dot-min { background: #febc2e; box-shadow: inset 0 0 0 0.5px #dea123; }
+.live-dot-max { background: #28c840; box-shadow: inset 0 0 0 0.5px #1aab29; }
+
+.live-mac-capsule {
+  background: #38383a; border-radius: calc(6px * var(--photo-ui-scale, 1));
+  padding: 0 calc(16px * var(--photo-ui-scale, 1)); height: calc(26px * var(--photo-ui-scale, 1));
+  display: inline-flex; align-items: center; justify-content: center;
+  font: 500 calc(12.5px * var(--photo-ui-scale, 1))/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  color: rgba(250, 250, 255, 0.94); letter-spacing: 0.1px; max-width: 52%;
+  border: 1px solid rgba(255, 255, 255, 0.08); box-sizing: border-box;
+}
+.live-mac-domain { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.photo-corners {
+  position: absolute; inset: 0; pointer-events: none; z-index: 12;
+}
+.p-corner {
+  position: absolute; width: 38px; height: 38px;
+  pointer-events: auto; touch-action: none; box-sizing: border-box; z-index: 6;
+}
+.p-corner::after {
+  content: ''; position: absolute;
+  width: 16px; height: 16px;
+  border-color: rgba(255, 255, 255, 0.88); border-style: solid;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+  transition: transform .15s ease, border-color .15s ease;
+}
+.p-corner:hover::after {
+  border-color: #ffffff;
+  transform: scale(1.18);
+}
+.p-corner.tl { top: 0; left: 0; cursor: nwse-resize; }
+.p-corner.tl::after { top: 10px; left: 10px; border-width: 2.5px 0 0 2.5px; border-top-left-radius: 3px; }
+
+.p-corner.tr { top: 0; right: 0; cursor: nesw-resize; }
+.p-corner.tr::after { top: 10px; right: 10px; border-width: 2.5px 2.5px 0 0; border-top-right-radius: 3px; }
+
+.p-corner.bl { bottom: 0; left: 0; cursor: nesw-resize; }
+.p-corner.bl::after { bottom: 10px; left: 10px; border-width: 0 0 2.5px 2.5px; border-bottom-left-radius: 3px; }
+
+.p-corner.br { bottom: 0; right: 0; cursor: nwse-resize; }
+.p-corner.br::after {
+  bottom: 10px; right: 10px; border-width: 0 2.5px 2.5px 0; border-bottom-right-radius: 3px;
+  border-color: rgba(255, 255, 255, 0.48);
+}
+
+/* 4 edge handles for independent width/height dragging */
+.p-edge {
+  position: absolute; pointer-events: auto; touch-action: none; box-sizing: border-box; z-index: 5;
+}
+.p-edge.t {
+  top: -10px; left: 38px; right: 38px; height: 20px; cursor: ns-resize;
+}
+.p-edge.b {
+  bottom: -10px; left: 38px; right: 38px; height: 20px; cursor: ns-resize;
+}
+.p-edge.l {
+  left: -10px; top: 38px; bottom: 38px; width: 20px; cursor: ew-resize;
+}
+.p-edge.r {
+  right: -10px; top: 38px; bottom: 38px; width: 20px; cursor: ew-resize;
+}
+.p-edge::after {
+  content: ''; position: absolute; background: rgba(255, 255, 255, 0.45); border-radius: 2px;
+  transition: opacity .15s ease, background .15s ease; opacity: 0; pointer-events: none;
+}
+.p-edge:hover::after, .photo-crop-frame.is-resizing .p-edge::after {
+  opacity: 1; background: rgba(255, 255, 255, 0.85);
+}
+.p-edge.t::after, .p-edge.b::after {
+  top: 8px; left: 50%; transform: translateX(-50%); width: 28px; height: 3px;
+}
+.p-edge.l::after, .p-edge.r::after {
+  left: 8px; top: 50%; transform: translateY(-50%); width: 3px; height: 28px;
+}
+
+/* When Mac bar is visible, frame the 3D scene neatly below the bar */
+.photo-live-mac-bar:not([hidden]) ~ .photo-corners .p-corner.tl::after,
+.photo-live-mac-bar:not([hidden]) ~ .photo-corners .p-corner.tr::after {
+  top: calc(var(--photo-bar-h, 38px) + 8px);
+}
+
+/* Subtle camera center focus reticle */
+.p-center-mark {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 14px; height: 14px; opacity: 0.6; pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
+  transition: top .2s ease;
+}
+.photo-live-mac-bar:not([hidden]) ~ .photo-corners .p-center-mark {
+  top: calc(50% + var(--photo-bar-h, 38px) / 2);
+}
+.p-center-mark::before, .p-center-mark::after {
+  content: ''; position: absolute; background: rgba(255, 255, 255, 0.9); border-radius: 1px;
+}
+.p-center-mark::before { top: 6px; left: 0; right: 0; height: 2px; }
+.p-center-mark::after { left: 6px; top: 0; bottom: 0; width: 2px; }
+
+.photo-bar {
+  pointer-events: auto; position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%); width: fit-content; max-width: min(640px, calc(100vw - 20px));
+  background: rgba(18, 20, 24, 0.94);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.4);
+  border-radius: 9999px; padding: 5px 8px 5px 12px;
+  display: flex; align-items: center; gap: 9px; z-index: 60;
+  box-sizing: border-box; user-select: none; touch-action: none;
+}
+.photo-bar.is-dragging {
+  cursor: grabbing !important;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.75), 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.photo-drag-handle {
+  width: 14px; height: 28px; display: flex; align-items: center; justify-content: center;
+  cursor: grab; margin-right: -2px; touch-action: none; flex-shrink: 0;
+}
+.drag-pill {
+  width: 4px; height: 16px; border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+  transition: background .15s ease, transform .15s ease;
+}
+.photo-drag-handle:hover .drag-pill,
+.photo-bar.is-dragging .drag-pill {
+  background: rgba(255, 255, 255, 0.7);
+  transform: scaleX(1.4);
+}
+
+.photo-capsule-strip {
+  display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
+}
+.photo-top-pills, .photo-shutter-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
+}
+.photo-quick-flip {
+  width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.1);
+  color: #ffffff; cursor: pointer; transition: all .14s ease; flex-shrink: 0;
+}
+.photo-quick-flip:hover {
+  background: rgba(255, 255, 255, 0.25); color: #ffffff; border-color: rgba(255, 255, 255, 0.32);
+}
+.photo-quick-flip:active {
+  transform: scale(0.92);
+}
+.flip-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: transform .22s ease;
+}
+.photo-quick-flip.is-selfie .flip-icon {
+  transform: rotate(180deg);
+}
+.flip-icon svg {
+  width: 21px; height: 21px; display: block;
+}
+
+/* Individual Dock Item for physical popup anchoring */
+.photo-dock-item {
+  position: relative; display: flex; align-items: center;
+}
+
+.photo-capsule {
+  display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 13px;
+  background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px; color: #ffffff;
+  font: 600 14px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  cursor: pointer; transition: all .14s ease; white-space: nowrap;
+}
+.photo-capsule:hover, .photo-capsule.active {
+  background: rgba(255, 255, 255, 0.22); color: #ffffff; border-color: rgba(255, 255, 255, 0.35);
+}
+.photo-capsule.active .cap-caret {
+  transform: rotate(180deg);
+}
+.cap-caret {
+  transition: transform .18s ease; opacity: 0.85;
+}
+.cap-divider {
+  width: 1px; height: 20px; background: rgba(255, 255, 255, 0.2); margin: 0 3px; flex-shrink: 0;
+}
+.photo-toggle-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 36px; padding: 0;
+  background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px; color: #ffffff;
+  cursor: pointer; transition: all .14s ease; flex-shrink: 0;
+}
+.photo-toggle-pill:hover {
+  background: rgba(255, 255, 255, 0.2); color: #ffffff; border-color: rgba(255, 255, 255, 0.28);
+}
+.photo-toggle-pill.on {
+  background: #ffffff; color: #111214; border-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+.photo-toggle-pill .win-header-icon {
+  display: block; opacity: 1;
+}
+
+.photo-save-btn {
+  height: 36px; padding: 0 13px; display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 9999px; border: 0; background: #ffffff; color: #141518;
+  font: 600 14px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  letter-spacing: 0.2px;
+  cursor: pointer; transition: all .14s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  white-space: nowrap; flex-shrink: 0;
+}
+.photo-save-btn svg {
+  width: 14px; height: 14px;
+}
+.photo-save-btn:hover {
+  background: #f4f4f6; transform: scale(1.02);
+}
+.photo-save-btn:active {
+  transform: scale(0.97);
+}
+.photo-close-btn {
+  width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.1);
+  color: #ffffff; cursor: pointer; transition: all .14s ease; flex-shrink: 0;
+}
+.photo-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25); color: #ffffff; border-color: rgba(255, 255, 255, 0.32);
+}
+
+/* Live Viewfinder Watermark (所见即所得: in-viewfinder real-time match, micro and subtle) */
+.photo-live-watermark {
+  position: absolute;
+  right: calc(12px * var(--photo-ui-scale, 1));
+  bottom: calc(12px * var(--photo-ui-scale, 1));
+  display: inline-flex; align-items: center;
+  gap: calc(5px * var(--photo-ui-scale, 1));
+  height: calc(22px * var(--photo-ui-scale, 1));
+  padding: 0 calc(9px * var(--photo-ui-scale, 1)) 0 calc(6px * var(--photo-ui-scale, 1));
+  background: rgba(10, 12, 14, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none; user-select: none;
+  z-index: 10;
+}
+.capturing .photo-live-watermark {
+  display: none !important;
+}
+.live-wm-logo {
+  width: calc(13px * var(--photo-ui-scale, 1));
+  height: calc(13px * var(--photo-ui-scale, 1));
+  object-fit: contain; display: block;
+}
+.live-wm-text {
+  font: 600 calc(11px * var(--photo-ui-scale, 1))/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  color: #ffffff; letter-spacing: 0.2px;
+}
+
+/* Popover anchored directly above its trigger */
+.photo-popover {
+  position: absolute; bottom: calc(100% + 14px); left: 50%; transform: translateX(-50%);
+  background: rgba(18, 20, 24, 0.96);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px; padding: 14px 16px 16px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 2px 12px rgba(0, 0, 0, 0.4);
+  z-index: 80; pointer-events: auto;
+  animation: photoPopoverEnter .15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes photoPopoverEnter {
+  0% { opacity: 0; transform: translate(-50%, 6px) scale(0.98); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+/* Micro downward pointing arrow */
+.popover-arrow {
+  position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+  width: 10px; height: 5px; overflow: hidden; pointer-events: none;
+}
+.popover-arrow::after {
+  content: ''; position: absolute; top: -5px; left: 0;
+  width: 10px; height: 10px; background: rgba(18, 20, 24, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transform: rotate(45deg);
+}
+
+/* Popover Headers & Lists */
+.popover-header {
+  padding: 0 2px 10px 2px; display: flex; align-items: center; justify-content: space-between;
+}
+.popover-title {
+  font: 700 14px/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  color: #ffffff; letter-spacing: 0.2px;
+}
+.scene-popover {
+  min-width: 340px; padding: 12px 14px 14px;
+}
+
+.ratio-popover {
+  min-width: 128px; padding: 12px 14px 14px;
+}
+.ratio-popover .popover-header {
+  padding: 0 10px 10px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); margin-bottom: 10px;
+}
+.ratio-popover .popover-list {
+  min-width: 100px; gap: 5px;
+}
+.popover-row-btn {
+  height: 38px; padding: 0 10px; border-radius: 9px; border: 1px solid transparent;
+  background: transparent; color: #ffffff;
+  font: 600 14px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  cursor: pointer; transition: all .12s ease;
+  display: flex; align-items: center; justify-content: space-between;
+  white-space: nowrap; width: 100%; box-sizing: border-box;
+}
+.popover-row-btn:hover {
+  background: rgba(255, 255, 255, 0.14); color: #ffffff;
+}
+.popover-row-btn.on {
+  background: #ffffff; color: #141518; font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+.ratio-icon-cell {
+  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ratio-rect {
+  display: block; border: 1.8px solid currentColor; border-radius: 2.5px; box-sizing: border-box;
+}
+.ratio-rect.r-free {
+  width: 16px; height: 13px; border-style: dashed;
+}
+.ratio-rect.r-16-9 {
+  width: 18px; height: 11px;
+}
+.ratio-rect.r-9-16 {
+  width: 11px; height: 18px;
+}
+.ratio-rect.r-1-1 {
+  width: 14px; height: 14px;
+}
+.popover-row-btn .ratio-val {
+  font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", monospace; font-size: 15px;
+  letter-spacing: 0.3px;
+}
+
+/* 3-Column Scene Cascade Layout (Rightward Expansion) */
+.scene-cascade-layout {
+  display: flex; align-items: stretch; gap: 8px; padding: 0;
+}
+.scene-column {
+  display: flex; flex-direction: column; gap: 6px; padding: 0; flex: 1; min-width: 104px;
+}
+.scene-column .column-header {
+  font: 700 13px/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  color: #ffffff; letter-spacing: 0.3px;
+  padding: 0 4px 6px 4px; text-align: left;
+}
+.cascade-divider {
+  width: 1px; background: rgba(255, 255, 255, 0.14); margin: 2px 2px;
+}
+.scene-list {
+  display: flex; flex-direction: column; gap: 5px;
+}
+.scene-pill {
+  height: 38px; padding: 0 12px; border-radius: 9px; border: 1px solid transparent;
+  background: transparent; color: #ffffff;
+  font: 600 14px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  cursor: pointer; transition: all .12s ease; display: flex; align-items: center; gap: 8px;
+  white-space: nowrap; width: 100%; box-sizing: border-box;
+}
+.scene-pill:hover {
+  background: rgba(255, 255, 255, 0.14); color: #ffffff;
+}
+.scene-pill.on {
+  background: #ffffff; color: #141518; font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.32);
+}
+.scene-pill .pill-icon {
+  font-size: 16px; line-height: 1; width: 20px; text-align: center; flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .photo-bar {
+    position: fixed;
+    left: 0 !important; right: 0 !important; top: auto !important;
+    bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    transform: none !important;
+    width: 100% !important; max-width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 16px !important;
+    pointer-events: none !important;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px;
+  }
+  .photo-drag-handle {
+    display: none !important;
+  }
+  .cap-divider {
+    display: none !important;
+  }
+  .photo-capsule-strip {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; width: 100%; pointer-events: none;
+  }
+
+  /* Row 1: Top micro option pills */
+  .photo-top-pills {
+    pointer-events: auto;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: rgba(18, 20, 24, 0.88);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 9999px;
+    padding: 4px 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+  .photo-top-pills .photo-toggle-pill {
+    width: 32px; height: 30px;
+  }
+  .photo-top-pills .photo-capsule {
+    height: 30px; padding: 0 10px; font-size: 13px; gap: 5px;
+  }
+
+  /* Row 2: Bottom Shutter Action Row */
+  .photo-shutter-row {
+    pointer-events: auto;
+    display: flex; align-items: center; justify-content: space-between;
+    width: min(290px, calc(100vw - 48px));
+  }
+  .photo-quick-flip {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(22, 24, 28, 0.86);
+    border: 1.5px solid rgba(255, 255, 255, 0.22);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  }
+  .photo-quick-flip .flip-icon svg {
+    width: 25px; height: 25px;
+  }
+  .photo-quick-flip:active {
+    transform: scale(0.92); background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Prominent camera shutter button */
+  .photo-save-btn {
+    width: 66px; height: 66px; border-radius: 50%;
+    background: #ffffff; color: #141518;
+    border: 4px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35), 0 8px 28px rgba(0, 0, 0, 0.55);
+    display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .photo-save-btn svg {
+    width: 28px; height: 28px; stroke-width: 2.3;
+  }
+  .photo-save-btn span {
+    display: none !important;
+  }
+  .photo-save-btn:active {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 4px 14px rgba(0, 0, 0, 0.4);
+  }
+
+  .photo-close-btn {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(22, 24, 28, 0.86);
+    border: 1.5px solid rgba(255, 255, 255, 0.22);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  }
+  .photo-close-btn svg {
+    width: 17px; height: 17px;
+  }
+  .photo-close-btn:active {
+    transform: scale(0.92); background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Compact Popovers on mobile */
+  .photo-popover {
+    bottom: calc(100% + 10px) !important;
+    padding: 10px 12px !important;
+    border-radius: 16px !important;
+    max-width: calc(100vw - 32px) !important;
+  }
+  .scene-cascade-layout {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .scene-column .column-header {
+    font-size: 11px !important; padding: 0 2px 4px !important;
+    opacity: 0.75;
+  }
+  .scene-list {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px !important;
+  }
+  .scene-pill {
+    height: 32px !important; padding: 0 4px !important;
+    font-size: 12px !important; gap: 4px !important;
+    justify-content: center !important;
+    border-radius: 7px !important;
+  }
+  .scene-pill .pill-icon {
+    font-size: 13px !important; width: auto !important;
+  }
+  .cascade-divider {
+    width: 100% !important; height: 1px !important; margin: 2px 0 !important;
+  }
+}
+
+.photo-flash {
+  position: fixed; inset: 0; background: #ffffff; z-index: 100; pointer-events: none; opacity: 0;
+}
+.photo-flash.active {
+  animation: photoFlashAnim 0.3s ease-out;
+}
+@keyframes photoFlashAnim {
+  0% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+#photoToast {
+  position: fixed; bottom: 104px; left: 50%; transform: translateX(-50%); z-index: 99;
+  background: rgba(18, 20, 22, 0.94); color: #ffffff; padding: 9px 20px; font: 600 15px var(--text);
+  border-radius: 20px; box-shadow: 0 4px 16px rgba(0, 0, 0, .45), 0 0 0 1px rgba(255, 255, 255, .15);
+  pointer-events: none; animation: photoToastFade .2s ease-out;
+}
+@keyframes photoToastFade {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}

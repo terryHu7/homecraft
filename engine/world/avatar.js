@@ -7,6 +7,15 @@ const PX = 1.8 / 32;
 // In the water the body turns about its middle, this high above the feet.
 export const SWIM_PIVOT = 1.0;
 
+// Handheld selfie: the arm reaches towards the lens but stays low in the
+// frame, leaving only a small foreground section visible. The face turns
+// towards the same raised phone rather than a detached third-person camera.
+const SELFIE = {
+  armR: -1.65, armRy: 0, armRz: -0.38, elbowR: 0,
+  armL: 0.08, armLz: 0.12,
+  headYaw: -0.26, headPitch: -0.10, headRoll: 0.04,
+};
+
 function skinnedBox(w, h, d, regions, material, inflate = 0) {
   const g = new THREE.BoxGeometry((w + inflate) * PX, (h + inflate) * PX, (d + inflate) * PX);
   const uv = g.getAttribute('uv');
@@ -79,34 +88,64 @@ export function createAvatar(skinUrl, { onFace } = {}) {
   head.add(hat);
   body.add(head);
 
-  const limb = (u, v, x, y) => {
+  // Face order matches BoxGeometry: +x, -x, +y, -y, +z, -z. A split limb cuts
+  // the 4x12 side faces at row 6, keeping the shoulder cap on the upper arm
+  // and the palm on the forearm. With a straight elbow it reads as one arm.
+  const limb = (u, v, x, y, { elbow = false } = {}) => {
     const pivot = new THREE.Group();
     pivot.position.set(x * PX, y * PX, 0);
-    const mesh = skinnedBox(4, 12, 4, boxRegions(u, v, 4, 12, 4), material);
-    mesh.position.y = -5 * PX;
-    pivot.add(mesh);
     body.add(pivot);
-    return pivot;
+    if (!elbow) {
+      const mesh = skinnedBox(4, 12, 4, boxRegions(u, v, 4, 12, 4), material);
+      mesh.position.y = -5 * PX;
+      pivot.add(mesh);
+      return { pivot, tip: pivot };
+    }
+    const upper = [
+      [u + 8, v + 4, 4, 6], [u, v + 4, 4, 6],
+      [u + 4, v, 4, 4], [u + 8, v, 4, 4],
+      [u + 4, v + 4, 4, 6], [u + 12, v + 4, 4, 6],
+    ];
+    const lower = [
+      [u + 8, v + 10, 4, 6], [u, v + 10, 4, 6],
+      [u + 4, v, 4, 4], [u + 8, v, 4, 4],
+      [u + 4, v + 10, 4, 6], [u + 12, v + 10, 4, 6],
+    ];
+    const upperMesh = skinnedBox(4, 6, 4, upper, material);
+    upperMesh.position.y = -3 * PX;
+    pivot.add(upperMesh);
+    const joint = new THREE.Group();
+    joint.position.y = -6 * PX;
+    pivot.add(joint);
+    const lowerMesh = skinnedBox(4, 6, 4, lower, material);
+    lowerMesh.position.y = -3 * PX;
+    joint.add(lowerMesh);
+    return { pivot, tip: joint };
   };
-  // Character's right is -x when facing +z.
-  const armR = limb(40, 16, -6, 22);
-  const armL = limb(32, 48, 6, 22);
-  const legR = limb(0, 16, -2, 12);
-  const legL = limb(16, 48, 2, 12);
+  // Character's right is -x when facing +z. Only that arm has an elbow:
+  // a selfie keeps it almost straight and reaches towards the lens.
+  const right = limb(40, 16, -6, 22, { elbow: true });
+  const armR = right.pivot, elbowR = right.tip;
+  const armL = limb(32, 48, 6, 22).pivot;
+  const legR = limb(0, 16, -2, 12).pivot;
+  const legL = limb(16, 48, 2, 12).pivot;
   legR.children[0].position.y = -6 * PX;
   legL.children[0].position.y = -6 * PX;
 
-  // A phone for the right hand, out only while the phone is up. Its screen
-  // faces back up the arm, towards their face.
-  const dark = new THREE.MeshLambertMaterial({ color: 0x1b1d21 });
-  const handset = new THREE.Mesh(new THREE.BoxGeometry(2.4 * PX, 0.4 * PX, 4.2 * PX), [dark, dark, new THREE.MeshBasicMaterial({ color: 0xa9c8ff }), dark, dark, dark]);
-  handset.position.set(0, -11.4 * PX, 1.4 * PX);
+  // A narrow phone follows the hand during normal phone use. Selfie mode is
+  // the view from that phone, so its body is hidden rather than appearing as
+  // a black slab in front of the lens; only the outstretched arm remains.
+  const dark = new THREE.MeshLambertMaterial({ color: 0x24282f });
+  const handset = new THREE.Mesh(new THREE.BoxGeometry(2.0 * PX, 0.35 * PX, 3.6 * PX), [dark, dark, new THREE.MeshBasicMaterial({ color: 0xa9c8ff }), dark, dark, dark]);
   handset.visible = false;
-  armR.add(handset);
+  const phonePivot = new THREE.Group();
+  phonePivot.add(handset);
+  body.add(phonePivot);
   // Where a web leaves their right hand.
   const hand = new THREE.Object3D();
-  hand.position.set(0, -11.5 * PX, 0);
-  armR.add(hand);
+  hand.position.set(0, -5.5 * PX, 0);
+  elbowR.add(hand);
+  const handAt = new THREE.Vector3();
 
   // Minecraft entities wear a soft round shadow rather than a cast one.
   const blob = new THREE.Mesh(
@@ -117,9 +156,9 @@ export function createAvatar(skinUrl, { onFace } = {}) {
   blob.renderOrder = 1;
 
   // Pose state, eased every frame.
-  const pose = { legR: 0, legL: 0, armR: 0, armL: 0, armRz: 0, armLz: 0, legRz: 0, legLz: 0, lean: 0 };
+  const pose = { legR: 0, legL: 0, armR: 0, armL: 0, armRy: 0, armRz: 0, elbowR: 0, armLz: 0, legRz: 0, legLz: 0, lean: 0 };
   const target = { ...pose };
-  let phase = 0, idleT = 0, waveT = 0, reachT = 0, reachArm = 'R', phoneOut = false, stroke = 0;
+  let phase = 0, idleT = 0, waveT = 0, reachT = 0, reachArm = 'R', phoneOut = false, selfie = false, stroke = 0;
   const look = { yaw: 0, pitch: 0 };
 
   // In the water: lying on the bottom, climbing out, diving in, treading
@@ -167,7 +206,7 @@ export function createAvatar(skinUrl, { onFace } = {}) {
     idleT += dt;
     const swingAmp = s.run ? 0.95 : 0.62;
     const swing = Math.sin(phase) * swingAmp * Math.min(1, s.speed * 1.4);
-    Object.assign(target, { legR: swing, legL: -swing, armR: -swing * 0.85, armL: swing * 0.85, armRz: 0, armLz: 0, legRz: 0, legLz: 0, lean: s.run ? 0.12 : 0 });
+    Object.assign(target, { legR: swing, legL: -swing, armR: -swing * 0.85, armL: swing * 0.85, armRz: 0, elbowR: 0, armLz: 0, legRz: 0, legLz: 0, lean: s.run ? 0.12 : 0 });
     if (!moving) {
       target.armRz = Math.sin(idleT * 1.6) * 0.04 + 0.03;
       target.armLz = -Math.sin(idleT * 1.6) * 0.04 - 0.03;
@@ -194,15 +233,28 @@ export function createAvatar(skinUrl, { onFace } = {}) {
       reachT -= dt;
       if (reachArm === 'R') { target.armR = -2.95; target.armRz = -0.1; } else { target.armL = -2.95; target.armLz = 0.1; }
     }
-    // Holding the phone: the right arm forward and in, the head bowed to it.
-    if (phoneOut) { target.armR = -1.2; target.armRz = 0.42; }
+    // Hold the phone normally, or reach towards the lens for a selfie.
+    if (selfie) {
+      Object.assign(target, {
+        armR: SELFIE.armR, armRy: SELFIE.armRy, armRz: SELFIE.armRz,
+        elbowR: SELFIE.elbowR, armL: SELFIE.armL, armLz: SELFIE.armLz,
+      });
+    } else if (phoneOut) {
+      target.armR = -1.2;
+      target.armRz = 0.42;
+      target.armRy = 0;
+    } else {
+      target.armRy = 0;
+    }
     const k = 1 - Math.exp(-dt * 14);
     for (const key in pose) pose[key] += (target[key] - pose[key]) * k;
 
     legR.rotation.x = pose.legR; legL.rotation.x = pose.legL;
     legR.rotation.z = pose.legRz; legL.rotation.z = pose.legLz;
     armR.rotation.x = pose.armR; armL.rotation.x = pose.armL;
+    armR.rotation.y = pose.armRy;
     armR.rotation.z = pose.armRz; armL.rotation.z = pose.armLz;
+    elbowR.rotation.x = pose.elbowR;
     if (w) {
       // Pitched about the middle of the body, and rolled about its length to
       // lie face up; a slow bob while afloat.
@@ -216,19 +268,40 @@ export function createAvatar(skinUrl, { onFace } = {}) {
     }
     // The head looks where it is told, within a natural range. Swimming on
     // top, it lifts to look ahead over the water.
-    const headPitch = !w ? THREE.MathUtils.clamp(phoneOut ? 0.45 : s.lookPitch ?? 0, -0.5, 0.6)
+    const headPitch = !w ? THREE.MathUtils.clamp(selfie ? SELFIE.headPitch : (phoneOut ? 0.45 : s.lookPitch ?? 0), -0.5, 0.6)
       : w.lie > 0.5 || w.dive ? 0 : w.surface ? (w.fast ? -0.2 : -THREE.MathUtils.clamp(w.pitch - 0.25, 0, 1.1)) : -0.35;
-    look.yaw += (THREE.MathUtils.clamp(s.lookYaw ?? 0, -1.1, 1.1) - look.yaw) * k * 0.6;
+    look.yaw += (THREE.MathUtils.clamp(selfie ? SELFIE.headYaw : (s.lookYaw ?? 0), -1.1, 1.1) - look.yaw) * k * 0.6;
     look.pitch += (headPitch - look.pitch) * k * 0.6;
     head.rotation.y = look.yaw;
     head.rotation.x = look.pitch;
+    head.rotation.z = selfie ? SELFIE.headRoll : 0;
+    if (selfie || phoneOut) {
+      root.updateMatrixWorld(true);
+      hand.getWorldPosition(handAt);
+      phonePivot.position.copy(body.worldToLocal(handAt));
+      phonePivot.position.z += 1.4 * PX;
+      phonePivot.rotation.set(selfie ? -Math.PI / 2 : pose.armR, 0, 0);
+    }
+  }
+
+  // World-space anchors for the photo camera: the face and the character's
+  // axes. The studio puts the lens just in front of the face, on the side of
+  // the raised hand, without waiting for the pose to ease in.
+  function selfieAnchors() {
+    root.updateMatrixWorld(true);
+    return {
+      face: new THREE.Vector3(0, 1.6, 4 * PX).applyMatrix4(root.matrixWorld),
+      forward: new THREE.Vector3(0, 0, 1).transformDirection(root.matrixWorld),
+      right: new THREE.Vector3(1, 0, 0).transformDirection(root.matrixWorld),
+    };
   }
 
   function wave() { waveT = 1.4; }
   function reach(arm = 'R') { reachT = 0.75; reachArm = arm; }
-  function holdPhone(on) { phoneOut = on; handset.visible = on; }
+  function holdPhone(on) { phoneOut = on; handset.visible = phoneOut && !selfie; }
+  function poseSelfie(on) { selfie = on; handset.visible = phoneOut && !selfie; }
 
-  return { root, body, head, armR, armL, legR, legL, hand, blob, update, wave, reach, holdPhone, material };
+  return { root, body, head, armR, armL, legR, legL, hand, blob, update, wave, reach, holdPhone, poseSelfie, selfieAnchors, material };
 }
 
 // ---------- Pets ----------

@@ -27,6 +27,10 @@ export function createInput(canvas, handlers) {
     if (id === 'ControlLeft' || id === 'ControlRight' || id === 'control') { if (!typing(e) && !blocked()) keys.add(id); return; }
     if (typing(e) || e.metaKey || e.altKey || (e.ctrlKey && !movement)) return;
     if (k === 'escape') { handlers.escape?.(); return; }
+    if ((k === 'p' || k === 'c') && !movement && !e.repeat && !handlers.shortcutsBlocked?.()) {
+      handlers.photo?.();
+      return;
+    }
     if (!movement && /^[1-9]$/.test(k) && !handlers.shortcutsBlocked?.()) {
       if (!e.repeat) handlers.slot?.(Number(k));
       return;

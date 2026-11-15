@@ -30,6 +30,7 @@ import { createPortal, arrival, visitWorld, isTravelling, placePortalControls } 
 import { wornSkin } from './traveller.js';
 import { createWorldList } from './ui/worlds.js';
 import { createWorldMap } from './ui/worldmap.js';
+import { createPhotoStudio } from './ui/photo.js';
 import { setLoadingProgress as progress, finishLoading, hideLoading } from './ui/loading.js';
 import { mountHud } from './hud.js';
 import { t, nameOf, applyLang, onLang, langSwitch } from './lang.js';
@@ -731,6 +732,13 @@ async function boot() {
     sound.play('click');
   });
 
+  // ---------- Photo studio ----------
+  const photoButton = $('#photoButton');
+  if (photoButton) photoButton.querySelector('span').style.backgroundImage = `url(${icon('camera').url})`;
+  const photoStudio = createPhotoStudio({
+    stage, world, rig, player, avatar, sound, setTimeMode, getTimeMode: () => timeMode, setWeatherMode, getWeatherMode: () => weatherMode, config,
+  });
+
   // ---------- Flight ----------
   // Keys: Space jumps, a double tap flies. The corner button does the same for
   // touch screens, where tapping a place then flies the player there. In the pool
@@ -765,7 +773,10 @@ async function boot() {
     const link = li.querySelector('a');
     return { id: li.dataset.app, name: li.querySelector('span').textContent.trim(), href: link?.getAttribute('href')?.trim() ? link.href : '', handle: link?.textContent.trim() || '', note: li.querySelector('p')?.textContent.trim() || '' };
   });
-  const phone = createPhone($('#phone'), accounts(), { write: pageEl('mailbox') ? () => openPage('mailbox') : null });
+  const phone = createPhone($('#phone'), accounts(), {
+    write: pageEl('mailbox') ? () => openPage('mailbox') : null,
+    photo: () => photoStudio.open(),
+  });
   phoneReady = true;
   // The Dock, in home.config.js order: pages by their data-station id, and 'phone'.
   let phoneButton = null;
@@ -806,9 +817,9 @@ async function boot() {
 
   // ---------- Input ----------
   const input = createInput(stage.renderer.domElement, {
-    blocked: () => minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!portal?.busy,
-    shortcutsBlocked: () => minimap.isBigOpen() || weatherMenuOpen() || isTravelling() || !!portal?.busy,
-    escape: () => { if (weatherMenuOpen()) toggleWeatherMenu(false, true); else if (minimap.isBigOpen()) minimap.toggleBig(false); else if (worldMap.isOpen()) worldMap.close(); else if (panel.open) closePage(); else if (phone.up) { if (!phone.back()) togglePhone(false); } else toggleWeb(false); },
+    blocked: () => minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!portal?.busy || photoStudio.isOpen(),
+    shortcutsBlocked: () => minimap.isBigOpen() || weatherMenuOpen() || isTravelling() || !!portal?.busy || photoStudio.isOpen(),
+    escape: () => { if (photoStudio.isOpen()) photoStudio.close(); else if (weatherMenuOpen()) toggleWeatherMenu(false, true); else if (minimap.isBigOpen()) minimap.toggleBig(false); else if (worldMap.isOpen()) worldMap.close(); else if (panel.open) closePage(); else if (phone.up) { if (!phone.back()) togglePhone(false); } else toggleWeb(false); },
     interact: () => {
       const s = nearestTarget();
       if (s) { useTarget(s.id); return; }
@@ -820,6 +831,7 @@ async function boot() {
       }
     },
     view: toggleView,
+    photo: () => (photoStudio.isOpen() ? photoStudio.close() : photoStudio.open()),
     jump: () => { rig.skipIntro(); player.jump(); },
     toggleFly,
     phone: () => togglePhone(),
@@ -944,7 +956,7 @@ async function boot() {
     requestAnimationFrame(loop);
     if (document.hidden) { last = now; return; }
     const elapsed = (now - last) / 1000;
-    const paused = minimap.isBigOpen() || worldMap.isOpen() || panel.open || weatherMenuOpen() || isTravelling();
+    const paused = minimap.isBigOpen() || worldMap.isOpen() || panel.open || weatherMenuOpen() || isTravelling() || photoStudio.isOpen();
     if (paused && !wasPaused) { player.cancel(); input.clear(); }
     wasPaused = paused;
     // Panels pause movement, but the visible world keeps rendering every frame.
@@ -1033,7 +1045,7 @@ async function boot() {
   addEventListener('resize', () => stage.resize());
   // Handy when poking at it from the console.
   window.__home = {
-    stage, world, player, avatar, rig, nav, pets, cat, dog, extras, portal, worn, atmosphere, weatherFx, pool, weather, config, stats, setWeatherMode, getWeatherMode: () => weatherMode, setTimeMode, getTimeMode: () => timeMode, navigate, openPage, openPortal, go, setMood,
+    stage, world, player, avatar, rig, nav, pets, cat, dog, extras, portal, worn, atmosphere, weatherFx, pool, weather, config, stats, setWeatherMode, getWeatherMode: () => weatherMode, setTimeMode, getTimeMode: () => timeMode, navigate, openPage, openPortal, go, setMood, photo: photoStudio,
     doors: doorRings ? L.DOORS : [],
     worldMap: { isOpen: () => worldMap.isOpen(), nodes: () => worldMap.nodeCount() },
     teleport(x, z) { player.teleport(x, z); rig.recenter(player); },

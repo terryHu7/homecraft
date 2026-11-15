@@ -10,7 +10,7 @@ Inspired by Minecraft, The Matrix and the metaverse, I used AI to turn my person
 
 You can explore it freely. I've built a basketball court, a gym and a workbench, and added a day–night cycle and a weather system.
 
-You can also embed regular web pages and open them by pressing F. The block-based graphics keep rendering demands low, so the site works on phones too.
+You can also embed regular web pages and open them by pressing F. The block-based graphics keep rendering demands low, so the site works on phones too. Press P or tap the phone's Camera app to open the Photo Studio: pick 16:9/9:16/1:1 ratios, fine-tune lighting and weather, frame an in-world selfie, and export crisp screenshots to share.
 
 Exploring the site feels like visiting a friend's home. Compared with a traditional website, it may be a more memorable way to get to know someone.
 
@@ -41,5 +41,20 @@ For future updates, see the [update guide](engine/UPDATING.md).
 <p align="center"><img src="https://terryhu.cn/share/homecraft-portal-en.webp" width="640" alt="Portal"></p>
 
 The portal lists personal websites and lets visitors travel between them, much like links between blogs.
+
+## Buy Me a Coffee
+
+<p align="center">
+  <a href="https://ko-fi.com/terryhu" target="_blank">
+    <img src="https://storage.ko-fi.com/cdn/kofi5.png" height="38" alt="Ko-fi">
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://l.creem.io/homecraft" target="_blank">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" height="38" alt="Buy Me a Coffee">
+  </a>
+</p>
+<p align="center">
+  <sub>PayPal / Ko-fi &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Card / Apple Pay</sub>
+</p>
 
 ## Links [🔗 LINUX DO](https://linux.do)

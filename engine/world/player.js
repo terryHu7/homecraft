@@ -405,7 +405,8 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   function zipTo(target) {
     if (mode === 'zip') return false;
     leaveWater(0.6);
-    cancel(); ladder = null; pilot = null; velocity.set(0, 0, 0); vy = 0;
+    // The previous support belongs to the departure point, not the landing.
+    cancel(); standing = null; ladder = null; pilot = null; velocity.set(0, 0, 0); vy = 0;
     const a = target.anchor, n = target.normal || [0, 1, 0], ledge = Math.abs(n[1]) < 0.5;
     const end = ledge ? { x: a.x + n[0] * 0.45, y: a.y - 1.7, z: a.z + n[2] * 0.45 }
       : { x: target.x, y: target.y + (target.y > y + 0.5 ? 0.8 : 0.05), z: target.z };

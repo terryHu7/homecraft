@@ -7,7 +7,7 @@
   "version": 1,
   "name": "Alex's Home",
   "url": "https://alex.example/home/",
-  "logo": "assets/favicon.png",
+  "logo": "assets/logo.png",
   "intro": { "zh": "我的作品与写作", "en": "My work and writing" },
   "lang": ["zh", "en"],
   "homecraft": true

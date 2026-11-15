@@ -10,7 +10,7 @@
 
 这个世界包罗万象，可以自由移动，里面建了篮球场，健身房，工作台，甚至还有昼夜交替和天气系统。
 
-对于二维网页也完全可以内嵌进来，例如按 F 查看。而且得益于方块风的性能开销小，手机也能轻松访问。
+对于二维网页也完全可以内嵌进来，例如按 F 查看。而且得益于方块风的性能开销小，手机也能轻松访问。还可以随时按下 P 键或打开手机相机，自由调节画幅、光影、天气和自拍机位，截取高清图片一键分享。
 
 逛上一圈，像是去朋友家做客了一趟。比起传统的网站，这样的相识或许更让人印象深刻。
 
@@ -42,8 +42,14 @@ Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 
 类似传统博客的友链，传送门列表收录了大家的个人网站，方便互相"串门"。
 
-扫码加入 homecraft 共建群:
+扫码加入 Homecraft 俱乐部:
 
-<p align="center"><img src="docs/images/wechat-group.jpg" width="280" alt="Homecraft 微信共建群"></p>
+<p align="center"><img src="docs/images/wechat-group.jpg" width="280" alt="Homecraft 俱乐部"></p>
+
+## 微信赞赏码
+
+<p align="center">
+  <img src="docs/images/wechat-sponsor.webp" width="160" alt="微信赞赏码">
+</p>
 
 ## 友情链接 [🔗 LINUX DO](https://linux.do)
