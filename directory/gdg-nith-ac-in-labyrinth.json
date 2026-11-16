@@ -1,0 +1,12 @@
+{
+  "name": "Labyrinth",
+  "url": "https://gdg.nith.ac.in/labyrinth/",
+  "owner": "GDSC NITH",
+  "lang": [
+    "en"
+  ],
+  "homecraft": true,
+  "added": "2026-11-16",
+  "intro": "NIT Hamirpur's 3D hackathon, with a Doberman.",
+  "logo": "https://gdg.nith.ac.in/labyrinth/assets/favicon.png"
+}
