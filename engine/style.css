@@ -1234,6 +1234,8 @@ body.photo-mode :is(#minimap, #hotbar, #flightPad, #prompt, #aim, #crosshair, #c
     transform: none !important;
     width: 100% !important; max-width: 100% !important;
     background: transparent !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     border: none !important;
     box-shadow: none !important;
     padding: 0 16px !important;

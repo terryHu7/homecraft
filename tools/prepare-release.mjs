@@ -22,6 +22,9 @@ if (!/^\d+\.\d+\.\d+$/.test(version)) throw Error('Expected a stable package ver
 if (!preview && git('status', '--porcelain', '--untracked-files=normal').toString().trim()) throw Error('Commit the reviewed release files first. Use --allow-dirty only for a local preview.');
 const current = readEngine(join(root, 'engine'));
 const manifest = JSON.parse(current['manifest.json']);
+// Preview bundles describe the working tree without changing the release manifest.
+if (preview) manifest.files = Object.fromEntries(Object.entries(current)
+  .filter(([file]) => file !== 'manifest.json').map(([file, bytes]) => [file, hash(file, bytes)]));
 const files = Object.fromEntries(Object.entries(current).filter(([file]) => file !== 'manifest.json').map(([file, bytes]) => [file, bytes.toString('base64')]));
 if (manifest.version !== version) throw Error('Generate the release engine manifest with the package version first.');
 const bundle = { format: 1, version, commit: git('rev-parse', 'HEAD').toString().trim(), preview, manifest, files, known: {}, baselines: [] };
