@@ -5,5 +5,6 @@
   "logo": "engine/assets/homecraft-logo.png",
   "intro": "",
   "lang": ["zh", "en"],
-  "homecraft": true
+  "homecraft": true,
+  "doors": ["https://terryhu.cn/"]
 }

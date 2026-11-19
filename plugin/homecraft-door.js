@@ -38,7 +38,7 @@ async function go(world) {
 function worlds(zh, dir, ready = true) {
   const pick = v => (typeof v === 'string' ? v : v && typeof v === 'object' ? (zh ? v.zh ?? v.en : v.en ?? v.zh) : '');
   const words = (v, n) => String(pick(v) || '').replace(/\s+/g, ' ').trim().slice(0, n);
-  const blocked = (Array.isArray(dir?.blocked) ? dir.blocked : []).map(key).filter(Boolean);
+  const blocked = (Array.isArray(dir?.blocked) ? dir.blocked : []).map(item => key(item)).filter(Boolean);
   const seen = new Set();
   const keep = data => (Array.isArray(data) ? data : Array.isArray(data?.worlds) ? data.worlds : []).slice(0, 256).map(item => {
     const url = item && typeof item.url === 'string' && /^https?:\/\//.test(item.url) ? http(item.url) : null;

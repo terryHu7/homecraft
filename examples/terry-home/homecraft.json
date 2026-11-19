@@ -4,6 +4,12 @@
   "url": "",
   "logo": "assets/favicon.png",
   "intro": "",
-  "lang": ["zh", "en"],
-  "homecraft": true
+  "lang": [
+    "zh",
+    "en"
+  ],
+  "homecraft": true,
+  "doors": [
+    "https://rsliyu.com/"
+  ]
 }

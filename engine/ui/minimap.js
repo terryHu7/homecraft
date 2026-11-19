@@ -3,7 +3,7 @@
 // top block, lighter where the ground steps up, darker where it falls away.
 import * as L from '@world/layout.js';
 
-const ISLAND = L.ISLAND, STATIONS = L.STATIONS || [], POOL = L.POOL || null, HOUSE = L.HOUSE || null;
+const ISLAND = L.ISLAND, STATIONS = L.STATIONS || [], POOL = L.POOL || null, HOUSE = L.HOUSE || null, DOORS = L.DOORS || [];
 import { icon } from './icons.js';
 import { nameOf } from '../lang.js';
 
@@ -58,6 +58,12 @@ export function drawMapImage(grid, obstacles, decorate = null) {
     ctx.strokeStyle = 'rgba(0, 0, 0, .55)';
     ctx.lineWidth = 2;
     ctx.strokeRect(X(HOUSE.x0 - 1), Z(HOUSE.z0 - 1), (HOUSE.x1 - HOUSE.x0 + 2) * PPM, (HOUSE.z1 - HOUSE.z0 + 2) * PPM);
+  }
+  // The one-way doors: little glowing rings on the ground, glowing on the map.
+  for (const d of DOORS) {
+    ctx.strokeStyle = 'rgba(150, 220, 255, .95)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(X(d.x), Z(d.z), 6, 0, Math.PI * 2); ctx.stroke();
   }
   return canvas;
 }

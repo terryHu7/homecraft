@@ -164,7 +164,7 @@ export async function getWorlds(force = false) {
   return directoryWorlds(await directory.read(force));
 }
 function directoryWorlds(shared, fallback = true) {
-  const blocked = (Array.isArray(shared?.blocked) ? shared.blocked : []).map(key).filter(Boolean);
+  const blocked = (Array.isArray(shared?.blocked) ? shared.blocked : []).map(item => key(item)).filter(Boolean);
   const seen = new Set();
   const keep = list => listOf(list).slice(0, 256).map(entry).filter(w => {
     const id = w && key(w.url);
