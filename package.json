@@ -25,6 +25,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "extensions": "node tools/extensions.mjs",
+    "test:extensions": "node --test tools/extensions.test.mjs",
+    "check:extensions": "node tools/check-extensions.mjs",
     "serve": "python3 tools/serve.py",
     "update": "npx --yes https://github.com/terryHu7/homecraft/releases/latest/download/homecraft-updater.tgz",
     "test:updates": "node --test tools/update-engine.test.mjs",

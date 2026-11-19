@@ -43,6 +43,8 @@ The import map in `index.html` defines module paths: `@world/` maps to `world/`,
 
 ## Running and Self-Check
 
+Optional extensions use [docs/extensions.md](docs/extensions.md). Run `npm run extensions -- help` for the local author, review and installation workflow. Keep installed packages in `extensions/` and settings in `extensions.json`; a new site enables none. Use the extension API rather than modifying engine internals. Run `npm run test:extensions` and `npm run check:extensions` after extension-system changes.
+
 ```sh
 python3 tools/serve.py          # Start local preview; use python on Windows
 npm run check:site              # Check site metadata, skin, and engine diffs — no dependencies or running server needed

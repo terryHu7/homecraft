@@ -31,6 +31,7 @@ import { createWorldList } from './ui/worlds.js';
 import { createPhotoStudio } from './ui/photo.js';
 import { setLoadingProgress as progress, finishLoading, hideLoading } from './ui/loading.js';
 import { mountHud } from './hud.js';
+import { createExtensions } from './extensions.js';
 import { t, nameOf, applyLang, onLang, langSwitch } from './lang.js';
 
 const STATIONS = L.STATIONS || [], POOL = L.POOL || null, HOUSE = L.HOUSE || null;
@@ -258,6 +259,8 @@ async function boot() {
   const rig = createRig(stage.camera, world);
   // The world's own moving parts (a sailboat, a Vertec, …): build.js setup(app).
   const extras = W.setup?.({ stage, world, nav, player, avatar, sound, rig, quality, config }) || {};
+  const extensions = createExtensions({ source: config.extensions, player, scene: stage.scene });
+  addEventListener('pagehide', event => { if (!event.persisted) extensions.dispose(); });
   progress(0.85);
 
   // Clock and weather start in automatic mode on every visit. The corner
@@ -942,6 +945,7 @@ async function boot() {
     for (const pet of pets) pet.update(dt, stage.camera, player);
     aerial?.update(elapsed, stage.camera, screen);
     extras.update?.(dt, elapsed, now);
+    extensions.update(dt, elapsed, now);
     atmosphere.update(elapsed, now);
     weatherFx.update(elapsed, stage.camera, weatherFocus.set(player.pos.x, player.y + 1, player.pos.z));
     const weatherNow = weatherFx.state, cam = stage.camera.position;
@@ -1012,7 +1016,7 @@ async function boot() {
   addEventListener('resize', () => stage.resize());
   // Handy when poking at it from the console.
   window.__home = {
-    stage, world, player, avatar, rig, nav, pets, cat, dog, extras, portal, worn, atmosphere, weatherFx, pool, weather, config, stats, setWeatherMode, getWeatherMode: () => weatherMode, setTimeMode, getTimeMode: () => timeMode, navigate, openPage, openPortal, go, setMood, photo: photoStudio,
+    stage, world, player, avatar, rig, nav, pets, cat, dog, extras, extensions, portal, worn, atmosphere, weatherFx, pool, weather, config, stats, setWeatherMode, getWeatherMode: () => weatherMode, setTimeMode, getTimeMode: () => timeMode, navigate, openPage, openPortal, go, setMood, photo: photoStudio,
     teleport(x, z) { player.teleport(x, z); rig.recenter(player); },
     project(x, y, z) {
       const v = new THREE.Vector3(x, y, z).project(stage.camera);
