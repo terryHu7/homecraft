@@ -17,7 +17,7 @@ export function classify(paths) {
   const entries = paths.filter(p => /^directory\/(?!_)[^/]+\.json$/.test(p));
   if (entries.length && (entries.length !== 1 || paths.some(path => path !== entries[0] && ![LEDGER, CREDITS].includes(path)) ||
       paths.includes(LEDGER) !== paths.includes(CREDITS))) throw Error('A listing PR must change one directory JSON file, optionally with its contributor ledger and generated credits. Submit other changes separately.');
-  return { listing: entries[0] || null, browser: paths.some(p => /^(engine\/|plugin\/|world\/|examples\/|tools\/|extensions(?:\/|\.json$)|\.github\/workflows\/|home\.config\.js$|index\.html$|package)/.test(p)) };
+  return { listing: entries[0] || null, browser: paths.some(p => /^(engine\/|plugin\/|world\/|examples\/|tools\/|\.github\/workflows\/|home\.config\.js$|index\.html$|package)/.test(p)) };
 }
 const run = (command, args) => execFileSync(command, args, { stdio: 'inherit' });
 async function main() {
@@ -35,8 +35,6 @@ async function main() {
   }
   run('node', ['--test', 'tools/listing-github.test.mjs', 'tools/listing-validation.test.mjs']);
   if (!mode.browser) return;
-  run('node', ['--test', 'tools/extensions.test.mjs']);
-  run('node', ['tools/check-extensions.mjs']);
   run('node', ['--test', 'tools/update-engine.test.mjs']);
   run('node', ['tools/check-site.mjs']);
   run('node', ['tools/check-metadata.mjs']);

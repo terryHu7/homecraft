@@ -47,7 +47,7 @@ export function applyLang() {
 }
 
 const listeners = [];
-export const onLang = fn => { listeners.push(fn); return () => { const at = listeners.indexOf(fn); if (at >= 0) listeners.splice(at, 1); }; };
+export const onLang = fn => listeners.push(fn);
 export function setLang(next) {
   if (!valid(next) || next === lang) return;
   lang = next;

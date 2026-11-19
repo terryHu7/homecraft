@@ -15,17 +15,12 @@ rm -rf "$out" && mkdir -p "$out"
 for item in index.html _headers home.config.js homecraft.json world assets engine vendor; do
   [ -e "$root/$item" ] && cp -R "$root/$item" "$out/"
 done
-if [ -f "$root/extensions.json" ]; then
-  node "$root/tools/extensions.mjs" build --site "$root" --out "$out"
-fi
 find "$out" -name .DS_Store -delete
 
 # Minify every module that isn't minified already (three.js ships .min.js). The
 # target is the oldest browsers the import map already needs, so minifying
 # never adds syntax they lack; the pinned version keeps the output stable.
-if [ "${HOMECRAFT_OFFLINE:-0}" = 1 ]; then
-  echo 'Offline build: modules copied unminified'
-elif command -v npx >/dev/null; then
+if command -v npx >/dev/null; then
   (cd "$out" && find . -name '*.js' ! -name '*.min.js' -print0 |
     xargs -0 npx --yes esbuild@0.25.10 --minify --charset=utf8 --format=esm \
       --target=chrome89,edge89,firefox108,safari16.4,ios16.4 \

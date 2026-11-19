@@ -21,8 +21,6 @@ const DEFAULTS = {
   // Notes from the mailbox: `endpoint` is your deployed backend/mailbox Worker;
   // without one the note opens the visitor's mail app addressed to `email`.
   mailbox: { endpoint: '', email: '', turnstileSitekey: '' },
-  // Optional site-local extension configuration. Existing worlds stay unchanged.
-  extensions: null,
   // Published sources for the shared Homecraft directory. Multiple sources
   // use the first valid answer. Keep these URLs aligned with docs/protocol.md.
   portal: {
