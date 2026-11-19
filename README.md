@@ -59,7 +59,7 @@ Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 
 扫码加入 Homecraft 俱乐部:
 
-<p align="center"><img src="https://terryhu.cn/assets/wechat-group.webp" width="280" alt="Homecraft 俱乐部"></p>
+<p align="center"><img src="https://terryhu.cn/share/wechat-group.webp" width="280" alt="Homecraft 俱乐部"></p>
 
 ## 微信赞赏码
 
