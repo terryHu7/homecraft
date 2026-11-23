@@ -16,6 +16,9 @@ export const bilingual = LANGS.length > 1;
 
 function initial() {
   if (!bilingual) return LANGS[0] || 'zh';
+  // index.html resolved the language before the first paint (so the loading
+  // line does not switch); agreeing with it keeps that first choice.
+  if (valid(window.__homecraftLang)) return window.__homecraftLang;
   const asked = new URLSearchParams(location.search).get('lang');
   if (valid(asked)) return asked;
   try { const saved = localStorage.getItem(KEY); if (valid(saved)) return saved; } catch {}

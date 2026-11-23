@@ -1,8 +1,20 @@
-# Homecraft
+<p align="center">
+  <a href="https://terryhu.cn">
+    <img src="docs/images/homecraft-logo-animated.gif" width="160" alt="Homecraft Logo">
+  </a>
+</p>
 
-[中文](README.md) · **English**
+<h1 align="center">Homecraft</h1>
 
-## Homepage + Minecraft = Homecraft
+<p align="center">
+  <strong>Homepage + Minecraft = Homecraft</strong>
+</p>
+
+<p align="center">
+  <a href="README.md">中文</a> · <b>English</b>
+</p>
+
+## A personal website as a 3D world
 
 I've always enjoyed building and customizing websites, but even after trying one template after another, I still felt constrained.
 

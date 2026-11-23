@@ -1,6 +1,18 @@
-# Homecraft
+<p align="center">
+  <a href="https://terryhu.cn">
+    <img src="docs/images/homecraft-logo-animated.gif" width="160" alt="Homecraft Logo">
+  </a>
+</p>
 
-**中文** · [English](README.en.md)
+<h1 align="center">Homecraft</h1>
+
+<p align="center">
+  <strong>Homepage + Minecraft = Homecraft</strong>
+</p>
+
+<p align="center">
+  <b>中文</b> · <a href="README.en.md">English</a>
+</p>
 
 ## 个人网站即我的世界
 
