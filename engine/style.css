@@ -502,11 +502,18 @@ dialog.book .close { position: absolute; top: 10px; right: 10px; color: #6b4a2e;
 #heart .pages blockquote { margin: 8px 0 12px; padding-left: 12px; border-left: 3px solid #c9a46a; font-size: 16px; line-height: 1.8; }
 #heart .pages cite { display: block; font-size: 13px; font-style: normal; color: #8a5a2e; }
 
-/* ---------- Loading: the dirt screen ---------- */
-#loading { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #3b2a1e; transition: opacity .5s; }
+/* ---------- Loading: rigid logo and real startup progress ---------- */
+#loading { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #171a16; transition: opacity .5s ease; }
 #loading.done { opacity: 0; pointer-events: none; }
-#loading .bar { width: min(320px, 70vw); height: 12px; background: #4a4a4a; box-shadow: 0 0 0 2px #000, inset 0 0 0 2px #6f6f6f; }
-#loading .bar i { display: block; height: 100%; width: 8%; background: #6fc94a; box-shadow: inset 0 -3px 0 #3f8a2a; transition: width .25s; }
+#loading .loading-logo { width: min(180px, 40vw); aspect-ratio: 1; flex: none; }
+#loading .loading-logo canvas { display: block; width: 100%; height: 100%; }
+#loading .bar { position: relative; width: min(260px, 62vw); height: 6px; overflow: hidden; background: #30352d; box-shadow: 0 0 0 1px #0d0f0c; }
+#loading .loading-logo + .bar { margin-top: -6px; }
+#loading .bar i { position: relative; display: block; height: 100%; width: 8%; background: #8ba94f; box-shadow: inset 0 -2px 0 #5c7336; transition: width .25s ease-out; }
+#loading .loading-status { margin-top: -10px; min-height: 21px; color: #ededed; font: 600 14px/1.45 var(--text); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+/* Both languages sit in the markup; <html lang> already picked one before the
+   first paint, so the line never switches from Loading to 加载中. */
+html[lang="en"] #loading .loading-status [lang="zh-CN"], html:not([lang="en"]) #loading .loading-status [lang="en"] { display: none; }
 #loading .loading-label { margin: 0; max-width: 70vw; color: #f0e8df; text-align: center; font: 500 16px/1.6 var(--text); overflow-wrap: anywhere; }
 /* Where a door leads, while it loads. */
 #loading .loading-preview { width: min(420px, 78vw); aspect-ratio: 1200 / 630; object-fit: cover; background: #4a4a4a; box-shadow: 0 0 0 2px #000, 0 0 0 4px #6f6f6f; }

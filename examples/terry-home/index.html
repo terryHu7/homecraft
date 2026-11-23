@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Pick the language before the first paint, so the loading line never swaps
+     mid-flight. The rules match engine/lang.js: ?lang, then the saved choice,
+     then the browser's. Long text carries both languages and style.css shows
+     one; this only decides which, early enough to avoid a flash. -->
+<script>(function(){var q=new URLSearchParams(location.search).get('lang'),s=null;try{s=localStorage.getItem('homecraft-lang')}catch(e){}var l=q==='en'||q==='zh'?q:(s==='en'||s==='zh'?s:(((navigator.languages&&navigator.languages[0])||navigator.language||'').toLowerCase().indexOf('zh')===0?'zh':'en'));document.documentElement.lang=l==='en'?'en':'zh-CN';window.__homecraftLang=l})();</script>
 <meta name="theme-color" content="#7fb2e8">
 <!-- The world draws its own day and night. -->
 <meta name="color-scheme" content="only light">
@@ -26,7 +31,7 @@
 <body>
 <main id="world" aria-label="Terry's Home"></main>
 
-<div id="loading"><div class="bar"><i></i></div></div>
+<div id="loading"><div class="loading-logo" data-loading-logo aria-hidden="true"></div><div class="bar" role="progressbar" aria-label="加载世界" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><i></i></div><span class="loading-status"><span lang="zh-CN">加载中 8%</span><span lang="en">Loading 8%</span></span></div>
 
 <section id="pages">
   <h1 class="plain-title">Terry's Home</h1>
@@ -106,6 +111,7 @@ if (location.protocol === 'file:') {
 }
 </script>
 <noscript><style>#world,#hud,#loading{display:none}#pages{display:block}</style></noscript>
+<script type="module" src="../../engine/ui/loading-logo.js"></script>
 <script type="module" src="../../engine/main.js"></script>
 </body>
 </html>
