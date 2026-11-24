@@ -32,6 +32,7 @@ assets/           Images (project screenshots, skins, icons)
 engine/           Shared engine (use the official updater; preserve local customizations)
 examples/terry-home/   Showcase home: reference implementation for buildings, furniture, landscaping, and pets
 backend/mailbox/  Optional: Cloudflare Worker that forwards guestbook messages to email
+multiplayer/      Optional: multiplayer presence (client/ ES modules + server/ Node room relay, ws). Off unless `multiplayer.endpoint` is set; see multiplayer/README.md and `npm run check:mp`
 tools/            serve.py (local preview), check.mjs (self-check), build.sh (build & deploy)
 plugin/           Portal plugin for regular websites and blogs (homecraft-door.js)
 directory/        Public directory data
