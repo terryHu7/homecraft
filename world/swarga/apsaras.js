@@ -116,30 +116,38 @@ export function buildPerformer(layer, materials, design, instrument) {
   }
   if (seated) buildInstrument(box, skeleton, instrument);
 
-  const [mesh] = batch.build(materials);
-  mesh.name = design.name;
-  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  mesh.boundingSphere.set(new THREE.Vector3(0, 1, 0), 1.8);
-  const joints = mesh.userData.tags;
-  const rest = joints.map((_, i) => {
-    const matrix = new THREE.Matrix4();
-    mesh.getMatrixAt(i, matrix);
-    return matrix;
-  });
-  delete mesh.userData.tags;
-  const matrix = new THREE.Matrix4();
-  function upload() {
-    skeleton.updateMatrixWorld(true);
-    for (let i = 0; i < joints.length; i++) {
-      matrix.multiplyMatrices(joints[i].matrixWorld, rest[i]);
-      mesh.setMatrixAt(i, matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-  }
   const root = new THREE.Group();
   root.name = design.id;
   root.scale.setScalar(design.scale);
-  root.add(mesh);
+  root.add(skeleton);
+  const sections = batch.build(materials).map(mesh => {
+    mesh.name = design.name;
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.boundingSphere.set(new THREE.Vector3(0, 1, 0), 1.8);
+    const joints = mesh.userData.tags;
+    const rest = joints.map((_, i) => {
+      const matrix = new THREE.Matrix4();
+      mesh.getMatrixAt(i, matrix);
+      return matrix;
+    });
+    delete mesh.userData.tags;
+    root.add(mesh);
+    return { mesh, joints, rest };
+  });
+  const matrix = new THREE.Matrix4();
+  const inverseRoot = new THREE.Matrix4();
+  function upload() {
+    root.updateWorldMatrix(true, true);
+    inverseRoot.copy(root.matrixWorld).invert();
+    for (let section = 0; section < sections.length; section++) {
+      const { mesh, joints, rest } = sections[section];
+      for (let i = 0; i < joints.length; i++) {
+        matrix.multiplyMatrices(inverseRoot, joints[i].matrixWorld).multiply(rest[i]);
+        mesh.setMatrixAt(i, matrix);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+  }
   return { root, hips, torso, head, arms, legs, upload };
 }
 

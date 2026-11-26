@@ -43,7 +43,7 @@ const station = (id, name, icon, at, look, floor, description) =>
 export const STATIONS = [
   station('gateway', 'Gateway', 'portal', [0, 15], [0, 13], 0, 'The stepped gateway opens onto the palace approach.'),
   station('sudharma', 'Sudharma Sabha', 'about', [0, -7], [0, -10], 1, "Sudharma Sabha is Indra's assembly hall in Swarga."),
-  station('throne-dais', 'Throne dais', 'about', [0, -15.75], [0, -18.1], 1 + 3 * DAIS_STEP, 'An empty golden throne stands on the raised dais in this scene.'),
+  station('throne-dais', 'Throne dais', 'about', [0, -15.75], [0, -18.1], 1 + 3 * DAIS_STEP, 'Indra receives an attendant at the golden throne on the raised dais.'),
   station('lotus-courtyard', 'Lotus courtyard', 'blog', [0, 9.9], [0, 7], 0, 'A lotus pool sits in the open courtyard between the gateway and the hall.'),
   station('airavata', 'Airavata', 'eye', [5.5, 8], [5.5, 5.8], 0, "Airavata is Indra's white elephant mount."),
   station('apsara-hall', 'Apsara Nritya Mandapam', 'portal', [50, 10.5], [50, 1], DANCE_HALL.floor, 'A pavilion for celestial music and dance in this Swarga scene.'),
@@ -63,6 +63,6 @@ export const STATIONS = [
 
 export const AIRAVATA_TUSKS = 4; // TODO(aswin): Confirm whether to keep four tusks.
 export const AIRAVATA_PATH = [
-  [0, 22, 7], [15, 23, 4], [27, 24, -7], [22, 25, -23],
-  [3, 25, -28], [-21, 24, -23], [-29, 23, -8], [-20, 22, 8],
+  [0, 24, 9], [14, 26, 6], [29, 25, -4], [27, 29, -22],
+  [7, 33, -31], [-17, 28, -25], [-31, 24, -10], [-23, 25, 11], [-9, 25, 13],
 ];

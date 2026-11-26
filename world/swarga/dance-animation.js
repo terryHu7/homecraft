@@ -34,7 +34,9 @@ function poseDancer(actor, time, reduced) {
   const index = Math.floor(frame);
   const blend = frame - index, ease = blend * blend * (3 - 2 * blend);
   const a = PHRASE[index], b = PHRASE[(index + 1) % PHRASE.length];
-  const turn = mix(a[9], b[9], ease);
+  const accent = reduced ? 0 : Math.max(0, (Math.cos(time * tau / 12) - .75) * 4);
+  const turn = mix(a[9], b[9], ease) * (1 - accent * .75);
+  const reachAccent = design.id === 'rambha' || design.id === 'menaka' ? .23 : -.16;
   const step = cycle * tau * 4;
   const weight = Math.sin(step);
   root.rotation.y = turn * (design.x < 50 ? 1 : -1);
@@ -46,12 +48,12 @@ function poseDancer(actor, time, reduced) {
   for (let i = 0; i < arms.length; i++) {
     const { shoulder, elbow, wrist, side } = arms[i];
     const j = design.x < 50 ? i * 4 : (1 - i) * 4;
-    shoulder.rotation.set(mix(a[j + 1], b[j + 1], ease), side * .09, side * mix(a[j], b[j], ease));
+    shoulder.rotation.set(mix(a[j + 1], b[j + 1], ease), side * .09, side * mix(mix(a[j], b[j], ease) + reachAccent, 1.16, accent));
     elbow.rotation.set(mix(a[j + 2], b[j + 2], ease), side * .1, side * .06);
     wrist.rotation.set(.06 * Math.sin(step + side), .18 * weight, mix(a[j + 3], b[j + 3], ease) * (design.x < 50 ? 1 : -1));
     const { thigh, shin, foot } = legs[i];
     const swing = weight * side;
-    const lift = .065 * Math.max(0, swing) ** 2;
+    const lift = .065 * Math.max(0, swing) ** 2 * (1 - accent * .65);
     const forward = .12 * swing;
     const down = hips.position.y - .035 - .075 - lift;
     const len1 = .412, len2 = .37, length = Math.hypot(down, forward);

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BoxBatch } from '@engine/world/blocks.js';
+import { attachBatch, createPivot } from './actor-rig.js';
 import { AIRAVATA_PATH, AIRAVATA_TUSKS } from './layout.js';
 
 const white = { tex: 'cloud', tint: new THREE.Color(0xfff9ee).multiplyScalar(1.8) };
@@ -10,27 +11,56 @@ const lapis = { tex: 'paint', tint: 0x2b4387 };
 const gold = { tex: 'paint', tint: 0xd4a017 };
 const gleam = { ...gold, emissive: 1 };
 
+const snow = new THREE.MeshLambertMaterial({ color: 0xfff0da });
+const innerEar = new THREE.MeshLambertMaterial({ color: 0xdbac9e });
+const tusk = new THREE.MeshLambertMaterial({ color: 0xffdfaa });
+const sphere = new THREE.SphereGeometry(1, 16, 10);
+function oval(parent, x, y, z, sx, sy, sz, material = snow) {
+  const mesh = new THREE.Mesh(sphere, material);
+  mesh.position.set(x, y, z);
+  mesh.scale.set(sx, sy, sz);
+  parent.add(mesh);
+  return mesh;
+}
+function curve(parent, points, radius, material) {
+  const path = new THREE.CatmullRomCurve3(points.map(point => new THREE.Vector3(...point)));
+  parent.add(new THREE.Mesh(new THREE.TubeGeometry(path, 18, radius, 8, false), material));
+}
+function featheredWing(parent, side) {
+  const shoulder = new THREE.Group();
+  shoulder.position.set(side * 1, 1.15, .55);
+  shoulder.name = side < 0 ? 'Airavata left wing' : 'Airavata right wing';
+  parent.add(shoulder);
+  oval(shoulder, side * 1.15, 0, -.28, 1.55, .31, .94);
+  const feathers = new THREE.InstancedMesh(sphere, snow, 15);
+  const plume = new THREE.Object3D();
+  for (let i = 0; i < feathers.count; i++) {
+    const progress = i / (feathers.count - 1);
+    plume.position.set(side * (.45 + 3.45 * progress), .04 * progress, -.8 - .5 * progress);
+    plume.rotation.y = -side * (.23 + progress * 1.03);
+    plume.scale.set(.23 - .072 * progress, .08, .67 + .56 * progress);
+    plume.updateMatrix();
+    feathers.setMatrixAt(i, plume.matrix);
+  }
+  feathers.instanceMatrix.needsUpdate = true;
+  shoulder.add(feathers);
+  return shoulder;
+}
+
 function buildAiravata(layer, materials) {
   const root = new THREE.Group();
   root.name = 'Airavata';
   function part(parent, x, y, z, build) {
-    const pivot = new THREE.Group();
-    pivot.position.set(x, y, z);
-    parent.add(pivot);
+    const pivot = createPivot(parent, x, y, z);
     const batch = new BoxBatch(layer);
     const box = (x, y, z, w, h, d, look = white, options) =>
       batch.box(x, y, z, w, h, d, look, { ...options, shadow: false });
     build(box);
-    pivot.add(...batch.build(materials));
+    attachBatch(pivot, batch, materials);
     return pivot;
   }
 
   const body = part(root, 0, 0, 0, box => {
-    box(0, -0.95, 0, 2.65, 2.4, 5.35);
-    box(0, -1.18, 0.12, 2.2, 0.35, 4.6, shade);
-    box(0, 1.4, 0.13, 2.54, 0.3, 3.36);
-    box(0, -0.67, -2.58, 2.26, 1.95, 0.78);
-    box(0, -0.55, 2.43, 2.35, 1.94, 0.73);
     box(0, 1.7, -0.38, 2.6, 0.095, 2.85, lapis);
     for (const side of [-1, 1]) {
       box(side * 1.35, -0.38, -0.38, 0.1, 1.85, 2.86, lapis);
@@ -42,39 +72,41 @@ function buildAiravata(layer, materials) {
     }
   });
 
+  oval(body, 0, .29, 0, 1.38, 1.43, 2.96);
+  const wings = [-1, 1].map(side => featheredWing(body, side));
   const head = part(body, 0, 0.45, 2.72, box => {
-    box(0, -1.04, 0.57, 1.86, 2.08, 1.9);
-    box(0, 0.96, 0.62, 1.52, 0.22, 1.46);
-    box(0, -0.77, 1.49, 1.28, 1.3, 0.42);
     box(0, 0.07, 1.725, 0.87, 0.69, 0.09, gold);
     box(0, 0.29, 1.79, 0.23, 0.23, 0.065, gleam, { rz: Math.PI / 4 });
     for (const side of [-1, 1]) {
       box(side * 0.94, 0.02, 1.13, 0.06, 0.225, 0.26, shade);
       box(side * 0.975, 0.065, 1.175, 0.045, 0.125, 0.13, eye);
-      for (let i = side === -1 ? 0 : 1; i < AIRAVATA_TUSKS; i += 2) {
-        const lower = Math.floor(i / 2);
-        const x = side * (0.79 - lower * 0.145), y = -0.5 - lower * 0.34;
-        const z = 1.48 - lower * 0.05;
-        const length = lower ? 0.68 : 1.02;
-        box(x, y, z + length * 0.4, 0.19, 0.21, length, ivory, { rx: 0.12 });
-        box(x + side * 0.025, y + 0.03, z + length * 0.99, 0.15, 0.15, 0.37, ivory, { rx: -0.23 });
-        box(x + side * 0.025, y + 0.063, z + length * 0.99 + 0.2, 0.135, 0.13, 0.15, gold, { rx: -0.32 });
-      }
+
     }
   });
 
-  const trunk = part(head, 0, -0.33, 1.55, box => {
-    box(0, -1.0, 0.14, 0.65, 1.08, 0.64, white, { rx: -0.13 });
-    box(0, -1.77, 0.37, 0.47, 0.95, 0.49, white, { rx: -0.37 });
-    box(0, -2.03, 0.79, 0.33, 0.41, 0.64, shade, { rx: -0.27 });
+  oval(head, 0, .14, .76, .96, 1.08, 1.04);
+  for (const side of [-1, 1]) {
+    oval(head, side * .53, -.38, 1.16, .48, .57, .6);
+    for (let i = side === -1 ? 0 : 1; i < AIRAVATA_TUSKS; i += 2) {
+      const lower = Math.floor(i / 2), x = side * (.75 - lower * .16), y = -.49 - lower * .31;
+      const d = lower ? .82 : 1.21;
+      curve(head, [[x,y,1.24],[x,y-.13,1.24+d*.46],[x+side*.04,y+.04,1.24+d*.85],
+        [x+side*.07,y+.21,1.24+d]], lower ? .078 : .106, tusk);
+    }
+  }
+  const trunk = new THREE.Group();
+  trunk.position.set(0, -.29, 1.53);
+  head.add(trunk);
+  oval(trunk, 0, -.32, .02, .4, .57, .37);
+  curve(trunk, [[0,-.14,.14],[0,-.83,.2],[0,-1.5,.39],[0,-1.81,.8],[0,-1.67,1.07]], .205, snow);
+  const ears = [-1, 1].map(side => {
+    const ear = new THREE.Group();
+    ear.position.set(side * .72, .43, .12);
+    head.add(ear);
+    oval(ear, side * .52, -.53, .06, .75, .92, .19);
+    oval(ear, side * .55, -.5, .185, .55, .73, .095, innerEar);
+    return ear;
   });
-
-  const ears = [-1, 1].map(side => part(head, side * 0.82, 0.5, -0.03, box => {
-    box(side * 0.49, -1.38, 0.03, 1.05, 1.47, 0.34);
-    box(side * 1.05, -1.12, 0.035, 0.39, 1.12, 0.31);
-    box(side * 0.55, -1.18, 0.212, 0.83, 1.1, 0.04, shade);
-    box(side * 0.52, -1.53, 0.02, 0.64, 0.18, 0.25);
-  }));
 
   const legs = [];
   for (const z of [1.84, -1.93]) for (const side of [-1, 1]) {
@@ -93,25 +125,27 @@ function buildAiravata(layer, materials) {
     box(0, -1.58, -0.61, 0.28, 0.4, 0.25, shade, { rx: 0.36 });
   });
 
-  return { root, body, head, trunk, ears, legs, tail };
+  return { root, body, head, trunk, ears, legs, tail, wings };
 }
 
 export function setupAiravata({ stage, world }) {
-  const { root, body, head, trunk, ears, legs, tail } = buildAiravata(world.tiles.layer, world.materials);
+  const { root, body, head, trunk, ears, legs, tail, wings } = buildAiravata(world.tiles.layer, world.materials);
   const path = new THREE.CatmullRomCurve3(AIRAVATA_PATH.map(point => new THREE.Vector3(...point)), true);
   path.arcLengthDivisions = 512;
   const lapsPerSecond = 2.2 / path.getLength();
   const tau = 2 * Math.PI;
   const sample = new THREE.Vector3(), behind = new THREE.Vector3(), ahead = new THREE.Vector3();
   const view = new THREE.Matrix4(), frustum = new THREE.Frustum();
-  const bounds = new THREE.Sphere(sample, 6.5);
-  let phase = 0, time = 0;
+  const bounds = new THREE.Sphere(sample, 8);
+  let phase = 0, time = 0, wingPhase = 0;
 
   function update(dt, checkVisibility = true) {
     // The first RAF timestamp can precede the boot clock used for its delta.
     dt = Math.max(0, dt);
     phase = (phase + dt * lapsPerSecond) % 1;
     time += dt;
+    const speedFactor = 1 + .08 * Math.cos(tau * phase);
+    wingPhase += dt * (1.6 + speedFactor * 1.5);
     // Ease by up to 8% around the mean speed, with no discontinuity at the seam.
     const along = phase + 0.08 * Math.sin(tau * phase) / tau;
     path.getPointAt(along, sample);
@@ -140,6 +174,12 @@ export function setupAiravata({ stage, world }) {
     ears[1].rotation.y = 0.27 + 0.19 * Math.sin(time * 0.92 + 0.6);
     for (let i = 0; i < legs.length; i++) {
       legs[i].rotation.x = (i < 2 ? 0.47 : 0.31) + 0.12 * Math.sin(time * 0.91 + i * 0.65);
+    }
+    const stroke = Math.sin(wingPhase);
+    for (let i = 0; i < wings.length; i++) {
+      const side = i ? 1 : -1;
+      wings[i].rotation.z = side * (.16 + .5 * stroke);
+      wings[i].rotation.y = side * (.09 + .08 * Math.cos(wingPhase));
     }
     tail.rotation.y = 0.25 * Math.sin(time * 0.77 - 0.9);
     tail.rotation.z = 0.12 * Math.sin(time * 0.77);

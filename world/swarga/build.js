@@ -1,3 +1,4 @@
+import { buildDining, setupDining } from './divine-dining.js';
 import * as THREE from 'three';
 import { BoxBatch } from '@engine/world/blocks.js';
 import { setupAiravata } from './airavata.js';
@@ -211,6 +212,7 @@ export function build({ grid, layer }) {
   const obstacles = [];
   const domes = buildShell(grid, batches, obstacles);
   buildInterior(batches.static, obstacles);
+  buildDining(batches.static, obstacles);
   buildCourtyard(batches.static, obstacles);
   const bakes = buildLighting(batches.static);
   const mandapam = new SceneryBatch(layer);
@@ -232,7 +234,7 @@ export function build({ grid, layer }) {
 
 // The shared engine creates sea meshes for every world. Detach them before
 // the first render, and opt the voxel shell out of the sun's shadow pass.
-export function setup({ stage, world, player, rig }) {
+export function setup({ stage, world, player, rig, nav }) {
   stage.scene.remove(world.coast.sea, stage.scene.getObjectByName('open-sea'));
   for (const group of Object.values(world.groups)) {
     group.traverse(object => { if (object.isMesh) object.castShadow = false; });
@@ -252,10 +254,12 @@ export function setup({ stage, world, player, rig }) {
   const updateDance = setupDance({ stage, world });
   const updateWildlife = setupNandanaAnimals({ stage, world });
   const updateClouds = setupNandanaClouds(stage, world.groups.nandanaClouds);
+  const updateDining = setupDining({ stage, world, nav });
   return {
     update(dt) {
       updateAiravata(dt);
       updateDance(dt);
+      updateDining(dt);
       updateWildlife(dt);
       updateClouds(dt);
     },
