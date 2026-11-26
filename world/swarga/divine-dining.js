@@ -32,7 +32,7 @@ const walk = value => request('walk', value);
 const perform = (kind, seconds) => request(kind, null, seconds);
 
 const smooth = x => x * x * (3 - 2 * x);
-const ease = THREE.MathUtils.lerp;
+
 
 export function setupDining({ stage, world, nav }) {
   const scene = new THREE.Group();
@@ -91,6 +91,16 @@ export function setupDining({ stage, world, nav }) {
   const server = rig('dining-attendant', 'Dining attendant', prepStand.x, 1, prepStand.z, 0x3d7169, 0xd8c36c);
   const guard = rig('sabha-guard', 'Sabha guard', 4.3, 1, -6.3, 0x6d3852, 0xc99a53);
   const cleaner = rig('sabha-steward', 'Sabha steward', -3.8, 1, -8, 0x955b3c, 0xdfbc66);
+  const florist = rig('flower-attendant', 'Flower attendant', -4.4, 1, -5.6, 0x995995, 0xf3b488);
+  const waterBearer = rig('water-attendant', 'Water attendant', 4.4, 1, -4.6, 0x375c91, 0x99d8df);
+  const pot = prop('Water pot', waterBearer.palm, box => {
+    box(0, -.14, 0, .22, .25, .22, gold);
+    box(0, .1, 0, .16, .07, .16, marble);
+  });
+  const flowers = prop('Flower offering', florist.palm, box => {
+    box(0, -.08, 0, .09, .16, .09, green);
+    box(0, .065, 0, .16, .08, .16, plum);
+  });
   const cloth = prop('Cleaning cloth', cleaner.palm, box => box(0, -.012, 0, .16, .023, .13, marble));
 
   server.tasks = [walk(prepStand), request('pick', tray, 1.2), walk(tableStand), request('place', table, 1.15),
@@ -99,10 +109,17 @@ export function setupDining({ stage, world, nav }) {
   guard.tasks = [walk({ x: 4.3, z: -12 }), perform('idle', 1.1), walk({ x: 4.3, z: -7 }), perform('idle', 1.2)];
   cleaner.tasks = sideboards.flatMap(surface => [walk(stand(surface)), request('clean', surface, 2.8)]);
 
+  florist.tasks = [walk({ x: -4.4, z: -7.25 }), perform('arrange', 3.2),
+    walk({ x: -4.4, z: -4.65 }), perform('inspect', 2.1)];
+  waterBearer.tasks = [walk({ x: 4.4, z: -5.55 }), perform('rest-pot', 2.5),
+    walk({ x: 4.4, z: -4.5 }), perform('inspect', 1.7)];
+
   const reach = new THREE.Vector3(), contact = new THREE.Vector3();
   const cup = new THREE.Vector3(), spout = new THREE.Vector3(), streamAxis = new THREE.Vector3();
   const vertical = new THREE.Vector3(0, 1, 0), pitchAxis = new THREE.Vector3(1, 0, 0);
   const orientation = new THREE.Quaternion(), parentRotation = new THREE.Quaternion();
+  const releaseFrom = new THREE.Vector3(), releaseTo = new THREE.Vector3();
+  const releaseRotation = new THREE.Quaternion(), level = new THREE.Quaternion();
   let held = null, transferred = false, serving = 0;
 
   function orient(object, pitch = 0) {
@@ -128,7 +145,6 @@ export function setupDining({ stage, world, nav }) {
   }
 
   function service(task, dt) {
-    const p = server.root.position;
     const t = Math.min(1, server.elapsed / task.seconds);
     const amount = smooth(Math.max(0, 1 - Math.abs(t * 2 - 1)));
     turnActor(server, Math.PI, dt);
@@ -136,7 +152,8 @@ export function setupDining({ stage, world, nav }) {
     if (task.kind === 'serve') {
       serving = Math.sin(t * Math.PI);
       server.head.rotation.x = .26 * serving;
-      contact.set(p.x - .22, p.y + 1.22, p.z - .43);
+      contact.set(0, .11, -.08);
+      tray.localToWorld(contact);
       reachService(contact, serving * .8);
     } else if (task.kind === 'pour') {
       serving = Math.sin(t * Math.PI) * .55;
@@ -171,19 +188,30 @@ export function setupDining({ stage, world, nav }) {
       }
       reachService(contact, amount);
       if (t >= .5 && !transferred) {
-        if (task.kind === 'pick') {
+        if (task.kind === 'pick' && !held && (task.value.parent === scene || task.value.parent === tray)) {
           server.palm.attach(task.value);
           held = task.value;
-        } else {
-          (task.kind === 'stow' ? tray : scene).attach(held);
+        } else if (held && task.kind !== 'pick') {
+          const surface = task.kind === 'stow' ? tray : scene;
+          surface.attach(held);
+          releaseFrom.copy(held.position);
+          releaseRotation.copy(held.quaternion);
+          if (task.kind === 'stow') releaseTo.set(.09, .045, -.045);
+          else releaseTo.set(task.value.x, task.value.y, task.value.z + .25);
+          task.placed = held;
           held = null;
         }
         transferred = true;
       }
+      if (transferred && task.kind !== 'pick' && task.placed) {
+        const settle = smooth(Math.min(1, (t - .5) * 8));
+        task.placed.position.lerpVectors(releaseFrom, releaseTo, settle);
+        task.placed.quaternion.copy(releaseRotation).slerp(level, settle);
+      }
     }
   }
 
-  const workers = [server, guard, cleaner];
+  const workers = [server, guard, cleaner, florist, waterBearer];
   function update(dt) {
     dt = Math.min(.08, Math.max(0, dt));
     stream.visible = false;
@@ -213,7 +241,18 @@ export function setupDining({ stage, world, nav }) {
         reach.set(task.value.x + .13 * Math.sin(actor.elapsed * 7), task.value.y + .023, task.value.z + .27);
         reachPalm(actor, reach);
       }
+      if (actor === florist || actor === waterBearer) {
+        const p = actor.root.position;
+        const pause = task.kind === 'arrange' || task.kind === 'rest-pot';
+        const sway = pause ? Math.sin(actor.elapsed * 4) : 0;
+        reach.set(.20 + (actor === florist ? .13 * sway : 0), pause ? .93 : 1.09, .35)
+          .applyAxisAngle(vertical, actor.root.rotation.y).add(p);
+        actor.head.rotation.x = pause ? .21 : 0;
+        reachPalm(actor, reach);
+      }
       actor.upload();
+      if (actor === waterBearer) orient(pot);
+      if (actor === florist) orient(flowers);
       if (actor === cleaner) orient(cloth);
       if (actor === server && held && task.kind !== 'pour') orient(held);
       if (done) {
@@ -222,7 +261,9 @@ export function setupDining({ stage, world, nav }) {
       }
       actor.root.userData.activity = task.kind;
     }
-    host.head.rotation.x = .18 * serving;
+    host.head.rotation.x = .32 * serving;
+    host.head.rotation.y = -.18 * serving;
+    host.torso.rotation.x = .29 * serving;
     host.arms[1].shoulder.rotation.x = -.45 * serving;
     host.arms[1].elbow.rotation.x = -.6 * serving;
     host.upload();

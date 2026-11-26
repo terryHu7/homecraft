@@ -130,24 +130,52 @@ function buildAiravata(layer, materials) {
 
 export function setupAiravata({ stage, world }) {
   const { root, body, head, trunk, ears, legs, tail, wings } = buildAiravata(world.tiles.layer, world.materials);
-  const path = new THREE.CatmullRomCurve3(AIRAVATA_PATH.map(point => new THREE.Vector3(...point)), true);
-  path.arcLengthDivisions = 512;
-  const lapsPerSecond = 2.2 / path.getLength();
+  // Keep the knots on both sides of the junction identical so selecting a
+  // different excursion preserves the incoming and outgoing flight tangent.
+  const excursion = AIRAVATA_PATH.map(point => [...point]);
+  excursion[3] = [39, 33, -34];
+  excursion[4] = [7, 39, -48];
+  excursion[5] = [-34, 26, -38];
+  const routes = [AIRAVATA_PATH, excursion].map(points => {
+    const curve = new THREE.CatmullRomCurve3(points.map(point => new THREE.Vector3(...point)), true);
+    curve.arcLengthDivisions = 512;
+    return { curve, length: curve.getLength() };
+  });
+  const bank = new THREE.InstancedMesh(sphere, new THREE.MeshLambertMaterial({
+    color: 0xfff2df, transparent: true, opacity: .24, depthWrite: false,
+  }), 4);
+  const puff = new THREE.Object3D();
+  for (let i = 0; i < bank.count; i++) {
+    puff.position.set(1 + i * 3, 39 + Math.sin(i) * 1.2, -47 - Math.sin(i) * 2);
+    puff.scale.set(3.5, 1.65, 2.6);
+    puff.updateMatrix();
+    bank.setMatrixAt(i, puff.matrix);
+  }
+  stage.scene.add(bank);
   const tau = 2 * Math.PI;
   const sample = new THREE.Vector3(), behind = new THREE.Vector3(), ahead = new THREE.Vector3();
   const view = new THREE.Matrix4(), frustum = new THREE.Frustum();
   const bounds = new THREE.Sphere(sample, 8);
-  let phase = 0, time = 0, wingPhase = 0;
+  let routeIndex = 0, laps = 0, distance = 0, speed = 2.4, time = 0, wingPhase = 0;
 
   function update(dt, checkVisibility = true) {
     // The first RAF timestamp can precede the boot clock used for its delta.
     dt = Math.max(0, dt);
-    phase = (phase + dt * lapsPerSecond) % 1;
     time += dt;
-    const speedFactor = 1 + .08 * Math.cos(tau * phase);
-    wingPhase += dt * (1.6 + speedFactor * 1.5);
-    // Ease by up to 8% around the mean speed, with no discontinuity at the seam.
-    const along = phase + 0.08 * Math.sin(tau * phase) / tau;
+    let route = routes[routeIndex];
+    const phase = distance / route.length;
+    const targetSpeed = 2.75 + .85 * Math.sin(phase * tau + .4) + .32 * Math.sin(phase * tau * 3);
+    speed += (targetSpeed - speed) * (1 - Math.exp(-dt * 1.35));
+    distance += speed * dt;
+    if (distance >= route.length) {
+      distance -= route.length;
+      laps++;
+      routeIndex = laps % 3 === 2 ? 1 : 0;
+      route = routes[routeIndex];
+    }
+    wingPhase += dt * (1.35 + speed * .62);
+    const along = distance / route.length;
+    const path = route.curve;
     path.getPointAt(along, sample);
     sample.y += 0.38 * Math.sin(time * 0.76);
     const camera = stage.camera;
