@@ -27,6 +27,7 @@ export function createInput(canvas, handlers) {
     if (id === 'ControlLeft' || id === 'ControlRight' || id === 'control') { if (!typing(e) && !blocked()) keys.add(id); return; }
     if (typing(e) || e.metaKey || e.altKey || (e.ctrlKey && !movement)) return;
     if (k === 'escape') { handlers.escape?.(); return; }
+    if (!movement && !e.repeat && handlers.pluginKey?.(k, e)) return;
     if ((k === 'p' || k === 'c') && !movement && !e.repeat && !handlers.shortcutsBlocked?.()) {
       handlers.photo?.();
       return;

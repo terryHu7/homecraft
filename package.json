@@ -28,6 +28,8 @@
     "serve": "python3 tools/serve.py",
     "update": "npx --yes https://github.com/terryHu7/homecraft/releases/latest/download/homecraft-updater.tgz",
     "test:updates": "node --test tools/update-engine.test.mjs",
+    "test:plugins": "node --test tools/plugins.test.mjs",
+    "check:plugins": "node tools/check-plugins.mjs",
     "release:prepare": "node tools/prepare-release.mjs",
     "check:site": "node tools/check-site.mjs",
     "check": "node tools/check-site.mjs && node tools/check.mjs",

@@ -62,7 +62,7 @@ export function drawMapImage(grid, obstacles, decorate = null) {
   return canvas;
 }
 
-export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null, getPlayer, getYaw, getRoute, onPick }) {
+export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null, drawLayers = null, getPlayer, getYaw, getRoute, onPick }) {
   const canvas = root.querySelector('canvas');
   const ctx = canvas.getContext('2d');
   let mapImage = drawMapImage(grid, obstacles, decorate);
@@ -133,6 +133,16 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       path(); ctx.strokeStyle = '#a77bff'; ctx.lineWidth = 4 * dpr; ctx.stroke();
     }
     ctx.restore();
+    if (drawLayers) {
+      const cos = Math.cos(yaw), sin = Math.sin(yaw);
+      drawLayers(ctx, {
+        mode: 'radar', scale, dpr, width: W, height: H,
+        toScreen: (x, z) => {
+          const dx = (x - p.x) * scale, dz = (z - p.z) * scale;
+          return [W / 2 + dx * cos - dz * sin, H / 2 + dx * sin + dz * cos];
+        },
+      });
+    }
     // Blips stay upright; ones off the edge are pinned to the rim.
     const R = W / 2 - 14 * dpr;
     for (const { s, img } of blips) {
@@ -234,6 +244,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       bctx.fillStyle = '#fff';
       bctx.fillText(label, lx + 6 * dpr, y + 1 * dpr);
     }
+    drawLayers?.(bctx, { mode: 'big', scale: s, dpr, width: W, height: H, toScreen: P });
     const p = getPlayer();
     const [px, py] = P(p.x, p.z);
     bctx.save();

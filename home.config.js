@@ -7,5 +7,6 @@ export default {
   weather: null,
   dock: ['blog', 'about', 'mailbox', 'phone'],
   mailbox: { endpoint: '', email: '', turnstileSitekey: '' },
+  plugins: [],
   badge: true,
 };

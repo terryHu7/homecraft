@@ -5,6 +5,7 @@ See the [public directory](docs/worlds.md) for the [Request listing](https://git
 ## Submitting Project Changes
 
 - Open an issue describing the problem and proposed changes. For changes to `engine/`, explain the effect on existing websites.
+- Keep optional features, visual packs, multiplayer modules, and third-party integrations out of the core template. Submit them as plugins to [terryHu7/homecraft-plugins](https://github.com/terryHu7/homecraft-plugins) using the plugin host documented in [docs/plugins.md](docs/plugins.md). Submit changes to `homecraft` when fixing engine bugs, improving performance, or adding general-purpose extension points.
 - Keep the [portal protocol](docs/protocol.md) backward compatible. New fields may be added; existing fields must not be renamed, removed, or given a different meaning. After changing `engine/door-*.js`, run `node tools/sync-protocol.mjs` to sync updates to `plugin/`.
 - Follow the development conventions in [AGENTS.md](AGENTS.md). Check interface changes in both Chinese and English, on desktop and mobile.
 - Run `npm run check:site` before submitting. After installing dependencies, run `npm run check` and `npm run check:portal`.
