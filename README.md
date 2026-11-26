@@ -50,9 +50,7 @@ Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 
 ## 插件系统 [🔗 Homecraft Plugins](https://github.com/terryHu7/homecraft-plugins)
 
-Homecraft 内置插件系统，标准插件独立安装于 `world/plugins/<id>/`，通过 `home.config.js` 启用，不修改核心引擎，兼容后续升级。
-
-插件仓库维护在 [Homecraft Plugins](https://github.com/terryHu7/homecraft-plugins)，插件接口文档见 [docs/plugins.md](docs/plugins.md)。
+Homecraft 内置插件系统，标准插件独立安装于 `world/plugins/<id>/`，通过 `home.config.js` 启用，不修改核心引擎，兼容后续升级。插件接口文档见 [docs/plugins.md](https://github.com/terryHu7/homecraft/blob/main/docs/plugins.md)。
 
 <a id="portal"></a>
 ## 传送门 [🔗 申请收录](https://github.com/terryHu7/homecraft/issues/new/choose)

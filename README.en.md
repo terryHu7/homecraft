@@ -50,9 +50,7 @@ For future updates, see the [update guide](engine/UPDATING.md).
 
 ## Plugin System [🔗 Homecraft Plugins](https://github.com/terryHu7/homecraft-plugins)
 
-Homecraft includes a built-in plugin system. Standard plugins install into `world/plugins/<id>/` and are enabled through `home.config.js`, leaving `engine/` untouched across upgrades.
-
-The plugin repository is maintained at [Homecraft Plugins](https://github.com/terryHu7/homecraft-plugins). See [docs/plugins.md](docs/plugins.md) for the plugin host API.
+Homecraft includes a built-in plugin system. Standard plugins are installed separately in `world/plugins/<id>/` and enabled through `home.config.js`, so the core engine can be upgraded independently. See [docs/plugins.md](https://github.com/terryHu7/homecraft/blob/main/docs/plugins.md) for the plugin API.
 
 <a id="portal"></a>
 ## Portal [🔗 Request listing](https://github.com/terryHu7/homecraft/issues/new/choose)
