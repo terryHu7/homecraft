@@ -1,5 +1,5 @@
 {
- "version": "0.2.0",
+ "version": "0.3.0",
  "files": {
   "UPDATING.md": "3610e90103a6c284e8e2574f5577833e93b98e3525ad70664afa7537501d4cc7",
   "assets/apps/github.webp": "d7304a720ea1017959ac6b76a83267c52f014e9ffaba65554f536f2964f57697",
@@ -18,17 +18,18 @@
   "assets/mac-bar-right.png": "80691403ebcf82199b477f764ccfebe772ad48dbe53068b1a6c438e9e0975d5e",
   "assets/mac-traffic.png": "3a0b18c164673d03a1de250d1d1900807773615b02b5aa13cce0186c86d17f31",
   "assets/terry-logo.png": "ba5bd70e67a3a7dcaf56b5ea952836de43fb67522e75bc42cbc85440933d806b",
-  "config.js": "3cbb67efc4353713791b50c69a6356468f3d2e6f0eca9f30b904e4a35b79ce82",
+  "config.js": "9bce33274c034202a1b1b5b5d83984b8eb741c83af93849827306bffc83c49bb",
   "door-controls.js": "a5c577fb0b234be9a50f79e3c4a2bab742bc2273ef2d8d3932a7b5dda1af1a70",
   "door-directory.js": "d52b9df46eb9a32168f3b9260b25c14a585163e13bc9ccef1adc28f4cb07ebae",
   "door-metadata.js": "ee578ef84d6c9e7e1a6964e6350501eed60568cb7dcb4e295d1359fce2ad1ff6",
   "door-protocol.js": "85d4e06cf7f294c91f79866d804e558108ae108260f35cfa75a00f0167f40ced",
   "hud.js": "40ab980dd2b7c632b575fc02d540e1327f806d5f1e1b282047f0f1d2939ca8ce",
-  "input.js": "c6458f50bf4c9efd2d9f24e223ddf3dc1c0254ee34a81dcde34f5a2b7d1e3a5e",
-  "lang.js": "d196c33fd0f77d84891bd1369ee7746762a9757e29141d9be00c8dd0e01429f0",
-  "main.js": "a298af23e2273ae9d7a6aaac5e3df3f83dc7409ceb2b7ae4515a7096667aed9d",
+  "input.js": "f79a9b19245b8a919458ff00a62349c8a08db1d6e25a18be0e3f648d2ea7156c",
+  "lang.js": "d1add2c899234eb45dc122d966b24a2fa1bb972e792f3baf5d0b23e2488ce8b2",
+  "main.js": "f3ed05da7999b7b166df1fd4ea059587faf51f60edfbb0a713f8e2dcc3f6cfe4",
+  "plugins.js": "0a291af44860930178f27d5fd08accf4e96a52b6d7e10ec640dc82252945946d",
   "portal.js": "b2d4951f903ff4bff0ac263dee8fc680ed72d6019910aeaabf4c1012e50427c0",
-  "style.css": "c40d06af5519fe441dd24290f1ef314685bd5b21fdf4a42cef43ac39b5771bc3",
+  "style.css": "9bba849ef853d2849ee53828c7247215bdcb5f2d7a69f992ba247cbecfe4bd7f",
   "traveller.js": "69b83b066881a9f7e302dbac7409fb2775c165945de2623820474ea9be66340e",
   "ui/embed.js": "692e583f15c8f9c3c670fc564b02a15bf24259a7ce2d2c0c5e856396a92d3c6a",
   "ui/flightpad.js": "682224f1f3a7be723b1e43af1e9b73b56a6204c3601ce0666ddacb938ba9d697",
@@ -36,7 +37,7 @@
   "ui/loading-logo.js": "a3ef41d142bcf70104dc17350b373c6e7b0d6cea9569c88c7eeb86e33841e518",
   "ui/loading.js": "4e09d26591dc3f382f9ef6ab47e36156f1941772bc6eb161093ad8bd95e8e7ca",
   "ui/mailbox.js": "cd0706252070b5cb4e0049593751106bb987bdb09be351fca943588a6acbe9bf",
-  "ui/minimap.js": "40475b5a3834e661ec709ee583b50ca9f2c7b99f199e1f66fcf0f631158af4f4",
+  "ui/minimap.js": "c7fbd1aa262ae528ea7d9ba55ad3cf16ff4cf1a19a49736f88942f8f3b859b9d",
   "ui/phone.js": "b19c70d99de65ffbc22ee9c46ff7714b191f1f382323a08c0e34726a19faa77e",
   "ui/photo.js": "4629601a9ff498de597240a8645dcb610b289e3768c58283991bd1818ed0fc1c",
   "ui/sound.js": "4a4a980ec5bfbc9681a79a3fad28d61d24e0995a10329216177d81e8ed5373f6",
@@ -65,7 +66,7 @@
   "world/textures.js": "71f5034371c19b9f826e89c4f5133d1848ceb81ae9fa29ca57464fc6a522a467",
   "world/voxels.js": "f8821c7a33740bf39c5e1d19e054fe3c0d53d594b2e89cd5370a28a2658d2fb3",
   "world/weather-fx.js": "52e4f331c8d0d6b5c7e999dbb2b073b6385f93a0755c6d490ae5c0bff8004766",
-  "world/world.js": "d4e7b30e35427c4ae625d36ab07dd6c2332be04f237f466de2720ff31b853ec5",
+  "world/world.js": "2018f734e5a57472739808ae293b5f39c16253018337e543b7f7005a59e64a79",
   "worlds-default.js": "5bc0fc0769e21785f87920baf3256eb989582abb8be3347ad3ecff6997ff132a"
  }
 }
