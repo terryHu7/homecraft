@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <b>中文</b> · <a href="README.en.md">English</a>
+  <b>中文</b> · <a href="README.en.md">English</a> · <a href="https://github.com/terryHu7/homecraft-plugins">Homecraft Plugins</a>
 </p>
 
 ## 个人网站即我的世界
@@ -22,7 +22,7 @@
 
 这个世界包罗万象，可以自由移动，里面建了篮球场，健身房，工作台，甚至还有昼夜交替和天气系统。
 
-对于二维网页也完全可以内嵌进来，例如按 F 查看。而且得益于方块风的性能开销小，手机也能轻松访问。还可以随时按下 P 键或打开手机相机，自由调节画幅、光影、天气和自拍机位，截取高清图片一键分享。
+对于二维网页也完全可以内嵌进来。而且得益于方块风的性能开销小，手机也能轻松访问。
 
 逛上一圈，像是去朋友家做客了一趟。比起传统的网站，这样的相识或许更让人印象深刻。
 
@@ -47,6 +47,12 @@
 Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
 
 后续更新见[更新指引](engine/UPDATING.md)。
+
+## 插件系统 [🔗 Homecraft Plugins](https://github.com/terryHu7/homecraft-plugins)
+
+Homecraft 内置插件系统，标准插件独立安装于 `world/plugins/<id>/`，通过 `home.config.js` 启用，不修改核心引擎，兼容后续升级。
+
+插件仓库维护在 [Homecraft Plugins](https://github.com/terryHu7/homecraft-plugins)，插件接口文档见 [docs/plugins.md](docs/plugins.md)。
 
 <a id="portal"></a>
 ## 传送门 [🔗 申请收录](https://github.com/terryHu7/homecraft/issues/new/choose)
@@ -79,4 +85,6 @@ Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
   <img src="docs/images/wechat-sponsor.webp" width="160" alt="微信赞赏码">
 </p>
 
-## 友情链接 [🔗 LINUX DO](https://linux.do)
+## 友情链接
+
+[LINUX DO](https://linux.do) · [V2EX](https://www.v2ex.com) · [NodeSeek](https://www.nodeseek.com)
