@@ -14,12 +14,18 @@
 <link rel="icon" href="assets/aswin-world.svg">
 <link rel="stylesheet" href="engine/style.css">
 <link rel="stylesheet" href="assets/portfolio.css">
-<script type="importmap">{"imports":{
-  "three":"./vendor/three/three.module.min.js",
-  "@engine/":"./engine/",
-  "@world/":"./world/",
-  "@config":"./home.config.js"
-}}</script>
+<script>
+const swargaPreview = new URLSearchParams(location.search).get('world') === 'swarga';
+const worldImports = document.createElement('script');
+worldImports.type = 'importmap';
+worldImports.textContent = JSON.stringify({ imports: {
+  'three': './vendor/three/three.module.min.js',
+  '@engine/': './engine/',
+  '@world/': swargaPreview ? './world/swarga/' : './world/',
+  '@config': swargaPreview ? './world/swarga/preview-config.js' : './home.config.js',
+}});
+document.currentScript.after(worldImports);
+</script>
 <link rel="stylesheet" href="assets/office.css">
 </head>
 <body>
@@ -179,10 +185,11 @@ if (location.protocol === 'file:') {
 }
 </script>
 <noscript><style>#world,#hud,#loading{display:none}#pages,#pages .page{display:block}</style></noscript>
-<script type="module" src="assets/portfolio.js"></script>
-<script type="module" src="assets/office.js"></script>
-<script type="module" src="assets/tv.js"></script>
 <script type="module" src="engine/ui/loading-logo.js"></script>
-<script type="module" src="engine/main.js"></script>
+<script type="module">
+if (swargaPreview) await import('./world/swarga/preview.js');
+else await Promise.all([import('./assets/portfolio.js'), import('./assets/office.js'), import('./assets/tv.js')]);
+await import('./engine/main.js');
+</script>
 </body>
 </html>
