@@ -74,6 +74,8 @@ The browser console provides the following debug APIs:
 | `__home.setTimeMode('night')` | Switch time of day |
 | `__home.setWeatherMode('rain')` | Switch weather |
 | `__home.rig.showcase([camX,Y,Z], [lookX,Y,Z])` | Lock camera position for screenshots |
+| `__home.plugins.status()` | View loaded plugin states and errors |
+| `__home.plugins.get('id')` | Access a plugin's exposed debug handle |
 
 ## Coordinates
 
@@ -220,6 +222,13 @@ The following are the default design requirements; user-specified styles take pr
 - **Put names and descriptions in cards.**
 - **Write lights to `bakes`.** See "Performance Budget".
 - **Use the engine's built-in UI.** Radar, Dock, card frames, buttons, and fonts are provided by the engine. The BetterMapIt icon and Homecraft branding are distributed with the engine.
+
+## Plugins
+
+Site plugins live under `world/plugins/<id>/` (with optional server code under `backend/<id>/`) and are enabled through `plugins` in `home.config.js`; see [docs/plugins.md](docs/plugins.md). `plugin/` (singular) remains reserved for the standalone external-website Portal Plugin (`plugin/homecraft-door.js`).
+
+- Prefer installing or authoring plugins through the plugin host instead of editing `engine/` or `world/build.js` directly.
+- Optional community plugins are maintained in [terryHu7/homecraft-plugins](https://github.com/terryHu7/homecraft-plugins).
 
 ## Portal
 

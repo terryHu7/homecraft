@@ -31,7 +31,8 @@ import { createWorldList } from './ui/worlds.js';
 import { createPhotoStudio } from './ui/photo.js';
 import { setLoadingProgress as progress, finishLoading, hideLoading } from './ui/loading.js';
 import { mountHud } from './hud.js';
-import { t, nameOf, applyLang, onLang, langSwitch } from './lang.js';
+import { loadPlugins } from './plugins.js';
+import { lang, t, nameOf, applyLang, onLang, langSwitch } from './lang.js';
 
 const STATIONS = L.STATIONS || [], POOL = L.POOL || null, HOUSE = L.HOUSE || null;
 const inPool = POOL ? (x, z) => x >= POOL.x0 && x < POOL.x1 && z >= POOL.z0 && z < POOL.z1 : () => false;
@@ -125,7 +126,9 @@ async function boot() {
   bootPhase = 'world';
   progress(0.3);
   await nextFrame();
-  const world = createWorld(stage, quality);
+  let plugins = null;
+  const pluginLoader = await loadPlugins(config.plugins);
+  const world = createWorld(stage, quality, pluginLoader);
   progress(0.66);
   await nextFrame();
   // The mailbox and the portal add their footprints before the walkable grid is built.
@@ -185,7 +188,9 @@ async function boot() {
     if (mood !== next) {
       mood = next; world.setMood(mood);
       document.body.classList.toggle('night', mood === 'night');
+      plugins?.emit('mood', mood);
     }
+    plugins?.emit('weather', { mode: weatherMode, timeMode, mood, params });
     // Use the same weather source as the scene, even when the hour is unchanged.
     const kind = weatherMode === 'auto' ? (status === 'off' ? 'clear' : condition?.kind) : weatherMode;
     const skyIcon = mood === 'night' ? 'moon' : 'sun';
@@ -348,6 +353,7 @@ async function boot() {
     workbench.focus();
     sound.play('click');
     markSlot(id);
+    plugins?.emit('pageOpen', { id });
   }
   function openPortal() {
     if (isTravelling() || portal?.busy) return;
@@ -364,6 +370,7 @@ async function boot() {
     document.body.classList.add('reading');
     input.clear(); player.cancel(); marker.hide(); markSlot('portal');
     body.focus({ preventScroll: true }); sound.play('click');
+    plugins?.emit('pageOpen', { id: 'portal' });
   }
   function closePage() { if (panel.open) panel.close(); }
   panel.querySelector('.close').addEventListener('click', closePage);
@@ -385,12 +392,14 @@ async function boot() {
   });
   panel.addEventListener('close', () => {
     if (panel.open) return;
+    const closed = openStation;
     worldList.destroy();
     mailboxForm.unmount();
     placePortalControls($('#hud'));
     panel.querySelector('.body iframe')?.remove();
     openStation = null; markSlot(null);
     document.body.classList.remove('reading');
+    if (closed) plugins?.emit('pageClose', { id: closed });
   });
 
   // ---------- The prompt in the corner ----------
@@ -454,6 +463,29 @@ async function boot() {
     hotbar.append(b);
     return b;
   }
+  function addPluginDockButton({ name, iconUrl, onClick, pluginId, controlId }) {
+    const b = document.createElement('button');
+    b.dataset.plugin = pluginId;
+    if (controlId) b.dataset.pluginControl = controlId;
+    b.setAttribute('aria-label', name());
+    const entry = [b, name];
+    docked.push(entry);
+    const img = document.createElement('img');
+    img.src = iconUrl; img.alt = '';
+    b.append(img);
+    b.addEventListener('click', e => { tooltip.hidden = true; onClick(e); });
+    b.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') showTip(name(), b.getBoundingClientRect()); });
+    b.addEventListener('pointerleave', () => { tooltip.hidden = true; });
+    hotbar.append(b);
+    return {
+      el: b,
+      remove() {
+        const i = docked.indexOf(entry);
+        if (i >= 0) docked.splice(i, 1);
+        b.remove();
+      },
+    };
+  }
   function markSlot(id) { for (const b of hotbar.querySelectorAll('[data-station]')) b.classList.toggle('on', b.dataset.station === id); }
 
   // Dock content appears on this click; the background moves to its station
@@ -503,7 +535,9 @@ async function boot() {
     if (toWater > 0 && (!block || toWater < block.t) && (!island || toWater < island.t) && inPool(o.x + d.x * toWater, o.z + d.z * toWater)) {
       water = { t: toWater, x: o.x + d.x * toWater, z: o.z + d.z * toWater };
     }
-    return { block: island ? null : block, spot: best?.h || null, island, water };
+    const maxPluginT = Math.min(block ? block.t + 0.35 : Infinity, island ? island.t : Infinity, best ? best.t : Infinity);
+    const pluginHit = plugins?.pick(ray.ray, maxPluginT) || null;
+    return { block: island ? null : block, spot: best?.h || null, island, water, plugin: pluginHit };
   }
 
   // ---------- Web-zip ----------
@@ -570,7 +604,13 @@ async function boot() {
     else if (!fromPointer || now - aimCheck > 60) { aimCheck = now; aimOk = !!zipTarget(x, y); }
     aim.hidden = !aimOk;
     if (aimOk) aim.style.transform = `translate(${x}px, ${y}px)`;
-    stage.renderer.domElement.style.cursor = aimOk ? 'none' : x >= 0 && pick(x, y).spot?.id === 'portal' ? 'pointer' : '';
+    let cursor = '';
+    if (aimOk) cursor = 'none';
+    else if (x >= 0) {
+      const hit = pick(x, y);
+      cursor = hit.spot?.id === 'portal' ? 'pointer' : hit.plugin?.cursor || '';
+    }
+    stage.renderer.domElement.style.cursor = cursor;
   }
   function refreshAim() {
     if (rig.firstPerson) hover(innerWidth / 2, innerHeight / 2);
@@ -585,6 +625,7 @@ async function boot() {
     if (rig.introActive) { rig.skipIntro(); return; }
     // Lying on the pool's floor looking up, a tap only brings them up again.
     if (player.gazing) { player.toggleDive(); return; }
+    if (target.plugin?.onTap) { target.plugin.onTap(); return; }
     if (webMode) {
       const target = zipTarget(x, y);
       if (target) return webTo(target);
@@ -684,7 +725,9 @@ async function boot() {
 
   // ---------- Radar ----------
   const minimap = createMinimap({
-    root: $('#minimap'), bigRoot: $('#bigmap'), grid: world.grid, obstacles: world.obstacles, decorate: world.drawMap,
+    root: $('#minimap'), bigRoot: $('#bigmap'), grid: world.grid, obstacles: world.obstacles,
+    decorate: (ctx, X, Z, PPM) => { world.drawMap?.(ctx, X, Z, PPM); plugins?.drawStaticMap(ctx, X, Z, PPM); },
+    drawLayers: (ctx, info) => plugins?.drawMapLayers(ctx, info),
     getPlayer: () => ({ x: player.pos.x, z: player.pos.z, heading: player.heading }),
     getYaw: () => rig.yaw,
     getRoute: () => player.path,
@@ -784,11 +827,23 @@ async function boot() {
     else if (openStation) $('#panelTitle').textContent = document.querySelector(`#pages .page[data-station="${openStation}"] h2`).textContent;
   });
 
+  // ---------- Plugins ----------
+  plugins = pluginLoader.createHost({
+    stage, world, nav, player, avatar, rig, sound, portal, weather, quality, config,
+    actions: { go, navigate, openPage, closePage, openPortal, visitWorld, depart, setWeatherMode, setTimeMode, getWeatherMode: () => weatherMode, getTimeMode: () => timeMode },
+    ui: { corner: $('#corner'), hotbar, hud: $('#hud'), addDockButton: addPluginDockButton, icon, onLang, t, getLang: () => lang, minimap },
+  });
+  plugins.start();
+  addEventListener('pagehide', event => { if (!event.persisted) plugins.dispose(); });
+
   // ---------- Input ----------
+  const isBlocked = () => minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!portal?.busy || photoStudio.isOpen() || plugins.hasBlockingOverlay();
+  const isShortcutsBlocked = () => minimap.isBigOpen() || weatherMenuOpen() || isTravelling() || !!portal?.busy || photoStudio.isOpen() || plugins.hasShortcutBlockingOverlay();
   const input = createInput(stage.renderer.domElement, {
-    blocked: () => minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!portal?.busy || photoStudio.isOpen(),
-    shortcutsBlocked: () => minimap.isBigOpen() || weatherMenuOpen() || isTravelling() || !!portal?.busy || photoStudio.isOpen(),
-    escape: () => { if (photoStudio.isOpen()) photoStudio.close(); else if (weatherMenuOpen()) toggleWeatherMenu(false, true); else if (minimap.isBigOpen()) minimap.toggleBig(false); else if (panel.open) closePage(); else if (phone.up) { if (!phone.back()) togglePhone(false); } else toggleWeb(false); },
+    blocked: isBlocked,
+    shortcutsBlocked: isShortcutsBlocked,
+    escape: () => { if (plugins.closeTopOverlay()) return; if (photoStudio.isOpen()) photoStudio.close(); else if (weatherMenuOpen()) toggleWeatherMenu(false, true); else if (minimap.isBigOpen()) minimap.toggleBig(false); else if (panel.open) closePage(); else if (phone.up) { if (!phone.back()) togglePhone(false); } else toggleWeb(false); },
+    pluginKey: (k, e) => plugins.handleKey(k, e, { blocked: isBlocked(), shortcutsBlocked: isShortcutsBlocked() }),
     interact: () => {
       const s = nearestTarget();
       if (s) { useTarget(s.id); return; }
@@ -829,6 +884,7 @@ async function boot() {
   weatherFx.warmup(true);
   pool.warmup(true);
   extras.warmup?.(true);
+  plugins.warmup(true);
   // Compiling a shader alone does not upload off-screen vertex buffers.
   // Draw every batch once under the loading screen, including culled panes
   // and particles, so the first weather preview/camera move stays warm.
@@ -857,6 +913,7 @@ async function boot() {
   weatherFx.warmup(false);
   pool.warmup(false);
   extras.warmup?.(false);
+  plugins.warmup(false);
   progress(1);
   await nextFrame();
   // Outside the portal, facing away from it, the light at rest behind.
@@ -924,7 +981,7 @@ async function boot() {
     requestAnimationFrame(loop);
     if (document.hidden) { last = now; return; }
     const elapsed = (now - last) / 1000;
-    const paused = minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || photoStudio.isOpen();
+    const paused = minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || photoStudio.isOpen() || plugins.hasBlockingOverlay();
     if (paused && !wasPaused) { player.cancel(); input.clear(); }
     wasPaused = paused;
     // Panels pause movement, but the visible world keeps rendering every frame.
@@ -942,6 +999,7 @@ async function boot() {
     for (const pet of pets) pet.update(dt, stage.camera, player);
     aerial?.update(elapsed, stage.camera, screen);
     extras.update?.(dt, elapsed, now);
+    plugins.update(dt, elapsed, now);
     atmosphere.update(elapsed, now);
     weatherFx.update(elapsed, stage.camera, weatherFocus.set(player.pos.x, player.y + 1, player.pos.z));
     const weatherNow = weatherFx.state, cam = stage.camera.position;
@@ -1012,7 +1070,7 @@ async function boot() {
   addEventListener('resize', () => stage.resize());
   // Handy when poking at it from the console.
   window.__home = {
-    stage, world, player, avatar, rig, nav, pets, cat, dog, extras, portal, worn, atmosphere, weatherFx, pool, weather, config, stats, setWeatherMode, getWeatherMode: () => weatherMode, setTimeMode, getTimeMode: () => timeMode, navigate, openPage, openPortal, go, setMood, photo: photoStudio,
+    stage, world, player, avatar, rig, nav, pets, cat, dog, extras, plugins, portal, worn, atmosphere, weatherFx, pool, weather, config, stats, setWeatherMode, getWeatherMode: () => weatherMode, setTimeMode, getTimeMode: () => timeMode, navigate, openPage, openPortal, go, setMood, photo: photoStudio,
     teleport(x, z) { player.teleport(x, z); rig.recenter(player); },
     project(x, y, z) {
       const v = new THREE.Vector3(x, y, z).project(stage.camera);

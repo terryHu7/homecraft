@@ -123,7 +123,7 @@ body.quiet #hud { opacity: 0; pointer-events: none; transition: opacity 1.6s eas
 }
 #corner button:hover { background: var(--btn-hover); }
 #corner button span { width: 32px; height: 32px; image-rendering: pixelated; background: center / contain no-repeat; }
-#viewButton[aria-pressed="true"], #webButton[aria-pressed="true"], #flyButton[aria-pressed="true"], #photoButton[aria-pressed="true"] { background: var(--accent); }
+#viewButton[aria-pressed="true"], #webButton[aria-pressed="true"], #flyButton[aria-pressed="true"], #photoButton[aria-pressed="true"], #corner button[data-plugin][aria-pressed="true"] { background: var(--accent); }
 #webButton[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--line), 0 0 0 4px #e8352b, inset 2px 2px 0 rgba(255, 255, 255, .32), inset -2px -3px 0 rgba(0, 0, 0, .38); }
 #moodButton { position: relative; }
 #moodButton b { position: absolute; right: -4px; bottom: -6px; padding: 1px 3px; font: 600 11px/1 var(--text); color: #fff; background: rgba(12, 23, 20, .85); text-shadow: 1px 1px 0 #000; pointer-events: none; }
@@ -548,7 +548,7 @@ body.plain #pages, noscript ~ #pages { display: block; }
   #minimap .badge img { width: 13px; height: 13px; border-radius: 3px; }
   #minimap .badge.credit { padding: 2px; }
   #minimap .badge.made { right: 4px; }
-  #corner { right: max(12px, env(safe-area-inset-right)); top: max(12px, env(safe-area-inset-top)); gap: 8px; }
+  #corner { right: max(12px, env(safe-area-inset-right)); top: max(12px, env(safe-area-inset-top)); gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 76px); }
   #corner button { width: 40px; height: 40px; }
   #corner button span { width: 28px; height: 28px; }
   #weatherMenu { right: max(12px, env(safe-area-inset-right)); top: calc(max(12px, env(safe-area-inset-top)) + 52px); }

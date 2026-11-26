@@ -18,7 +18,7 @@ import { MOODS, LAYER_SHADOW_ONLY } from './stage.js';
 
 export const floorAt = L.floorAt || (() => 0);
 
-export function createWorld(stage, quality) {
+export function createWorld(stage, quality, plugins = null) {
   const { scene } = stage;
   const tiles = createTileArray(), materials = createBlockMaterials(tiles.texture, createMarbleTexture(), tiles.layer.prada_marble);
   // Boxes marked { metal: true } use this; a world may swap in a real metal (see examples/terry-home's stainless.js).
@@ -27,6 +27,7 @@ export function createWorld(stage, quality) {
   const grid = new VoxelGrid({ min: [B.x0, -20, B.z0], size: [B.x1 - B.x0, 34, B.z1 - B.z0] });
   defineBaseBlocks(grid);
   const built = buildWorld({ grid, layer: tiles.layer, materials, stage, quality, scene }) || {};
+  plugins?.runBuild({ grid, layer: tiles.layer, materials, stage, quality, scene, built });
   const {
     batches = {}, planes = [], obstacles = [], lights: allLights = [], bakes = [], hotspots = [], animated = {}, surfaces = {},
     forest = null, sites = [], sitesAfter = [], seaHole = L.POOL || null, named = {},
@@ -41,8 +42,12 @@ export function createWorld(stage, quality) {
   }
   if (forest) for (const m of forest.batch.build(materials)) group('forest').add(m);
   const lighting = createInteriorLighting(grid, bakes, L.LIGHT_VOLUME);
-  for (const [name, batch] of Object.entries(batches)) for (const m of batch.build(materials)) {
-    m.userData.keepVisible = name.startsWith('wall'); group(name).add(m);
+  for (const [name, batch] of Object.entries(batches)) {
+    for (const b of Array.isArray(batch) ? batch : [batch]) {
+      for (const m of b.build(materials)) {
+        m.userData.keepVisible = name.startsWith('wall'); group(name).add(m);
+      }
+    }
   }
   for (const p of planes) group(p.userData.group || 'static').add(p);
   for (const g of Object.values(groups)) scene.add(g);
