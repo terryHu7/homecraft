@@ -65,7 +65,7 @@ export function createWorld(stage, quality) {
       return false;
     },
     pick(ray) {
-      if (!H || hidden.has('roof') || ray.direction.y >= 0 || !ray.intersectPlane(roofPlane, roofHit)) return null;
+      if (!H || named.modelRoofPicking || hidden.has('roof') || ray.direction.y >= 0 || !ray.intersectPlane(roofPlane, roofHit)) return null;
       if (roofHit.x <= H.x0 || roofHit.x >= H.x1 || roofHit.z <= H.z0 || roofHit.z >= H.z1) return null;
       return { t: roofHit.distanceTo(ray.origin), point: roofHit.clone(), site: 'roof' };
     },

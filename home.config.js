@@ -1,11 +1,9 @@
 export default {
-  name: '',
-  // 64×64 PNG, 4px arms, ≤ 18000 bytes. docs/avatar.md
-  skin: '',
-  languages: ['zh', 'en'],
-  // weather: { city: '上海', cityEn: 'Shanghai', latitude: 31.23, longitude: 121.47, timezone: 'Asia/Shanghai' },
+  name: "ASWIN'S WORLD",
+  skin: 'assets/me.png',
+  languages: ['en'],
   weather: null,
-  dock: ['blog', 'about', 'mailbox', 'phone'],
+  dock: ['welcome', 'hall', 'about', 'skills', 'works', 'library', 'personal', 'contact', 'phone'],
   mailbox: { endpoint: '', email: '', turnstileSitekey: '' },
   badge: true,
 };

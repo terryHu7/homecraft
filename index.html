@@ -3,93 +3,185 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<!-- Pick the language before the first paint, so the loading line never swaps
-     mid-flight. The rules match engine/lang.js: ?lang, then the saved choice,
-     then the browser's. Long text carries both languages and style.css shows
-     one; this only decides which, early enough to avoid a flash. -->
-<script>(function(){var q=new URLSearchParams(location.search).get('lang'),s=null;try{s=localStorage.getItem('homecraft-lang')}catch(e){}var l=q==='en'||q==='zh'?q:(s==='en'||s==='zh'?s:(((navigator.languages&&navigator.languages[0])||navigator.language||'').toLowerCase().indexOf('zh')===0?'zh':'en'));document.documentElement.lang=l==='en'?'en':'zh-CN';window.__homecraftLang=l})();</script>
-<meta name="theme-color" content="#7fb2e8">
-<!-- The world draws its own day and night. -->
+<meta name="theme-color" content="#152626">
 <meta name="color-scheme" content="only light">
 <meta name="darkreader-lock">
-<title>My Home</title>
-<meta name="description" content="">
+<title>ASWIN'S WORLD</title>
+<meta name="description" content="Explore Aswin Raj's developer portfolio in a traditional Malabar Tharavadu.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="My Home">
-<meta property="og:description" content="">
-<meta property="og:image" content="assets/og.jpg">
-<meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="engine/assets/homecraft-logo.png">
+<meta property="og:title" content="ASWIN'S WORLD">
+<meta property="og:description" content="Explore Aswin Raj's developer portfolio in a traditional Malabar Tharavadu.">
+<link rel="icon" href="assets/aswin-world.svg">
 <link rel="stylesheet" href="engine/style.css">
+<link rel="stylesheet" href="assets/portfolio.css">
 <script type="importmap">{"imports":{
   "three":"./vendor/three/three.module.min.js",
   "@engine/":"./engine/",
   "@world/":"./world/",
   "@config":"./home.config.js"
 }}</script>
+<link rel="stylesheet" href="assets/office.css">
 </head>
 <body>
-<main id="world" aria-label="My Home"></main>
-<div id="loading"><div class="loading-logo" data-loading-logo aria-hidden="true"></div><div class="bar" role="progressbar" aria-label="Loading world" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><i></i></div><span class="loading-status"><span lang="zh-CN">加载中 8%</span><span lang="en">Loading 8%</span></span></div>
+<main id="world" aria-label="ASWIN'S WORLD"></main>
+<dialog id="billiards" aria-labelledby="billiards-title" style="width:min(680px,94vw);padding:16px;border:2px solid #745539;border-radius:10px;background:#231c15;color:#fff">
+  <form method="dialog" style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+    <strong id="billiards-title">Pool</strong>
+    <output style="flex:1" aria-live="polite"></output>
+    <button type="button" data-rack>New rack</button>
+    <button value="close" aria-label="Close pool">Close</button>
+  </form>
+  <p style="margin:0 0 8px">Click or tap where you want to aim. Aim farther from the cue ball for a stronger shot.</p>
+  <canvas width="640" height="340" style="display:block;width:100%;touch-action:none" aria-label="Pool table"></canvas>
+</dialog>
+<dialog id="office-monitor" class="office-monitor" aria-label="Office computer">
+  <nav aria-label="Portfolio">
+    <button type="button" data-office-tab="resume">Résumé</button>
+    <button type="button" data-office-tab="experience">Experience</button>
+    <button type="button" data-office-tab="skills">Technical skills</button>
+    <button type="button" data-office-tab="projects">Projects</button>
+    <button type="button" data-office-tab="contact">Contact</button>
+    <button type="button" data-office-exit><span aria-hidden="true">×</span> Exit</button>
+  </nav>
+  <div data-office-body></div>
+</dialog>
+<div class="seated-actions">
+  <button class="mc-button" type="button" data-stand-oonjal hidden>Stand up</button>
+  <button class="mc-button" type="button" data-seated-tv hidden>Watch TV</button>
+</div>
+<div id="loading"><div class="loading-logo" data-loading-logo aria-hidden="true"></div><div class="bar" role="progressbar" aria-label="Loading world" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><i></i></div><span class="loading-status"><span lang="en">Loading 8%</span></span></div>
 
 <section id="pages">
-  <h1 class="plain-title">My Home</h1>
+  <h1 class="plain-title">ASWIN'S WORLD</h1>
 
-  <article class="page" data-station="about">
-    <h2 data-zh="关于我">About me</h2>
-    <div class="about">
-      <div class="about-text" lang="en">
-        <p>Add your introduction</p>
-        <div class="about-foot"><a class="mc-button" href="#contact" data-open="phone">Follow</a><a class="mc-button" href="#mailbox" data-open="mailbox">Mailbox</a></div>
-      </div>
-      <div class="about-text" lang="zh-CN">
-        <p>填写你的介绍</p>
-        <div class="about-foot"><a class="mc-button" href="#contact" data-open="phone">关注</a><a class="mc-button" href="#mailbox" data-open="mailbox">留言</a></div>
+  <article class="page" data-station="welcome">
+    <h2>Welcome to ASWIN'S WORLD</h2>
+    <div class="portfolio-card">
+      <p><strong>Aswin Raj</strong> · Web Developer</p>
+      <p>Walk in with WASD, drag to look around, and press F near a room to open its panel. You can also pick a room below or use the Dock.</p>
+      <a class="mc-button" data-room="hall" href="#hall">Enter the house</a>
+      <a class="mc-button" data-room="works" href="#works">See my projects</a>
+    </div>
+  </article>
+
+  <article class="page" id="hall" data-station="hall">
+    <h2>Nadumuttam</h2>
+    <div class="portfolio-card room-directory">
+      <h3>Ground floor</h3>
+      <a class="mc-button" data-room="about" href="#about">Living room · About me</a>
+      <a class="mc-button" data-room="library" href="#library">Library · Learning</a>
+      <a class="mc-button" data-room="personal" href="#personal">Bedroom · Interests</a>
+      <p>The kitchen behind the stairs has a door to the backyard.</p>
+      <h3>First floor</h3>
+      <a class="mc-button" data-room="works" href="#works">First-floor gallery · Projects</a>
+      <a class="mc-button" data-room="skills" href="#skills">Study · Skills</a>
+      <h3>Outdoors</h3>
+      <a class="mc-button" data-room="contact" href="#contact">Backyard · Contact</a>
+    </div>
+  </article>
+
+  <article class="page" id="about" data-station="about">
+    <h2>Living room</h2>
+    <div class="portfolio-card about">
+      <!-- Add your approved profile photograph here. -->
+      <div class="profile-monogram" aria-hidden="true">AR</div>
+      <div>
+        <h3>Aswin Raj</h3>
+        <p>I'm a web developer from Kerala and a BSc Computer Science student at the University of Calicut. I enjoy building full-stack applications and learning how software works from the browser down to the operating system.</p>
+        <a class="mc-button" data-room="oonjal" href="#oonjal">Visit the oonjal</a>
+        <a class="mc-button" data-room="sofa" href="#sofa">Visit the sofa</a>
+        <a class="mc-button" data-room="tv" href="#tv">Watch TV</a>
       </div>
     </div>
   </article>
 
-  <article class="page" data-station="blog" data-icon="blog">
-    <h2 data-zh="个人主页">Website</h2>
-    <div class="placeholder-card"><p data-zh="填写你的个人主页链接">Add your website link</p></div>
+  <article class="page" id="oonjal" data-station="oonjal">
+    <h2>Teak oonjal</h2>
+  </article>
+
+  <article class="page" id="sofa" data-station="sofa">
+    <h2>Teak sofa</h2>
+  </article>
+
+  <article class="page" id="tv" data-station="tv">
+    <h2>Television</h2>
+    <div class="portfolio-card">
+      <form class="portfolio-contact" data-tv-form>
+        <label>Video URL <input type="url" name="video" placeholder="https://…" required></label>
+        <small>Paste a direct video link or a YouTube or Vimeo link.</small>
+        <div>
+          <button class="mc-button" type="submit">Play with sound</button>
+          <button class="mc-button" type="button" data-tv-stop>Turn off</button>
+        </div>
+      </form>
+      <div class="tv-stage" data-tv-stage></div>
+      <button class="mc-button" type="button" data-tv-room hidden>Watch on the CRT</button>
+      <p role="status" data-tv-status></p>
+    </div>
+  </article>
+
+  <article class="page" id="skills" data-station="skills">
+    <h2>First-floor study</h2>
+    <div class="portfolio-card">
+      <h3>Frontend</h3><p>JavaScript, TypeScript, React, HTML, CSS</p>
+      <h3>Backend and data</h3><p>Node.js, Express, REST APIs, MongoDB</p>
+      <h3>Cloud and tools</h3><p>AWS, Cloudinary, Git, GitHub, VS Code</p>
+    </div>
+  </article>
+
+  <article class="page" id="works" data-station="works">
+    <h2>First-floor gallery</h2>
+    <div class="portfolio-card project-grid">
+      <!-- Add approved screenshots, GitHub URLs and live demo links to each project. -->
+      <section><h3>Kathā</h3><p>A web project that uses Cloudinary for media.</p><p class="project-meta">Cloudinary</p></section>
+      <section><h3>GoalScore AI</h3><p>An AI-focused project.</p></section>
+      <section><h3>Petcare Management System</h3><p>An application for organising pet care information.</p></section>
+      <section><h3>Assignment Management API</h3><p>A backend API for managing assignments.</p></section>
+    </div>
+  </article>
+
+  <article class="page" id="library" data-station="library">
+    <h2>Library</h2>
+    <div class="portfolio-card">
+      <h3>Learning journey</h3>
+      <p>I started with C and Python, then moved into JavaScript, React and full-stack web development. I also explore React Native and Linux.</p>
+      <h3>What I like solving</h3>
+      <p>Data structures, algorithms and the systems behind the apps I use. One long-term goal is to build an operating system.</p>
+    </div>
+  </article>
+
+  <article class="page" id="personal" data-station="personal">
+    <h2>Bedroom</h2>
+    <div class="portfolio-card">
+      <h3>Beyond the editor</h3>
+      <p>I enjoy exploring PC hardware, gaming and putting together a home theatre setup.</p>
+    </div>
   </article>
 
   <article class="page" id="contact" data-station="contact">
-    <h2 data-zh="关注">Follow</h2>
-    <p data-zh="填写你的联系方式">Add your contact details</p>
-    <ul class="contact">
-      <li data-app="github"><span>GitHub</span><a data-zh="填写 GitHub 链接">Add your GitHub link</a><p></p></li>
-    </ul>
+    <h2>Backyard</h2>
+    <div class="portfolio-card">
+      <ul class="contact-links" data-contact-links aria-label="Social links"></ul>
+      <form class="portfolio-contact" data-contact-form>
+        <label>Subject <input name="subject" maxlength="100" required></label>
+        <label>Message <textarea name="message" rows="4" maxlength="1500" required></textarea></label>
+        <button class="mc-button" type="submit" disabled>Open email app</button>
+        <p data-contact-status role="status">Contact details are coming soon.</p>
+      </form>
+    </div>
   </article>
-
-  <article class="page" id="mailbox" data-station="mailbox">
-    <h2 data-zh="留言">Mailbox</h2>
-    <form class="mailbox" method="post" enctype="text/plain">
-      <input name="subject" maxlength="80" required placeholder="Subject" aria-label="Subject (required)" data-zh-placeholder="主题" data-zh-label="主题，必填">
-      <textarea name="message" rows="6" maxlength="1000" required placeholder="Write something" aria-label="Write something" data-zh-placeholder="输入文字" data-zh-label="输入文字"></textarea>
-      <input name="contact" maxlength="120" required autocomplete="email" placeholder="Email or other contact (required)" aria-label="How to reach you (required)" data-zh-placeholder="联系方式（必填，邮箱或微信等）" data-zh-label="联系方式，必填">
-      <input class="trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <div class="mailbox-foot"><button class="mc-button" type="submit" data-zh="发送" disabled>Send</button></div>
-      <p class="mailbox-status" role="status" aria-live="polite"></p>
-    </form>
-  </article>
-
 </section>
 
-<!-- file:// cannot load the world modules. -->
 <script>
 if (location.protocol === 'file:') {
-  const zh = /^zh/i.test(navigator.language), note = document.createElement('aside');
-  note.id = 'startupNotice';
-  note.innerHTML = zh
-    ? '<h2>请用本地服务器打开</h2><p>直接双击打开时，浏览器不会加载 3D 世界。在这个文件夹里运行 <code>python3 tools/serve.py</code>（Windows 用 <code>python tools/serve.py</code>），它会找一个空闲端口并自动打开页面。地址也会打印在终端里。</p>'
-    : '<h2>Open it through a local server</h2><p>Browsers don’t load the 3D world from a double-clicked file. In this folder, run <code>python3 tools/serve.py</code> (on Windows, <code>python tools/serve.py</code>). It picks a free port and opens the page. The address is also printed in the terminal.</p>';
-  document.getElementById('pages').before(note);
-  document.getElementById('loading')?.remove();
+  document.getElementById('loading').remove();
   document.body.classList.add('plain');
 }
 </script>
-<noscript><style>#world,#hud,#loading{display:none}#pages{display:block}</style></noscript>
+<noscript><style>#world,#hud,#loading{display:none}#pages,#pages .page{display:block}</style></noscript>
+<script type="module" src="assets/portfolio.js"></script>
+<script type="module" src="assets/office.js"></script>
+<script type="module" src="assets/tv.js"></script>
 <script type="module" src="engine/ui/loading-logo.js"></script>
 <script type="module" src="engine/main.js"></script>
 </body>

@@ -1,0 +1,58 @@
+.portfolio-card {
+  max-width: 42rem;
+  margin: auto;
+  padding: clamp(1rem, 4vw, 1.6rem);
+  color: #e9f2ee;
+  background: #172c2e;
+  border: 1px solid #42625e;
+  border-radius: 12px;
+  line-height: 1.55;
+}
+.portfolio-card h3 { color: #a7e6d4; margin: 0 0 .45rem; }
+.portfolio-card p { margin: 0 0 .9rem; }
+.portfolio-card p:last-child { margin-bottom: 0; }
+.portfolio-card .mc-button { margin: .2rem .3rem .35rem 0; }
+.room-directory h3:not(:first-child) { margin-top: .9rem; }
+.profile-monogram {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: .85rem;
+  border-radius: 50%;
+  background: #a7e6d4;
+  color: #172c2e;
+  font-size: 1.6rem;
+}
+.project-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: .85rem; }
+.project-grid section { border: 1px solid #42625e; border-radius: 8px; padding: .85rem; }
+.project-meta { font-size: .85em; color: #a7e6d4; }
+.portfolio-contact, .portfolio-contact label { display: grid; gap: .4rem; }
+.portfolio-contact { gap: .75rem; }
+.portfolio-contact input, .portfolio-contact textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: .55rem;
+  border: 1px solid #688783;
+  border-radius: 5px;
+  color: #fff;
+  background: #102023;
+  font: inherit;
+}
+.portfolio-contact button { justify-self: start; }
+.contact-links a { color: #a7e6d4; margin-right: .85rem; }
+.contact-links { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.7rem; }
+.contact-links li { display: flex; gap: 0.4rem; align-items: center; }
+.seated-actions {
+  position: fixed;
+  z-index: 15;
+  display: flex;
+  gap: 0.5rem;
+  left: 50%;
+  bottom: max(5.7rem, calc(env(safe-area-inset-bottom) + 5rem));
+  transform: translateX(-50%);
+}
+.seated-actions [hidden], [data-tv-room][hidden] { display: none; }
+.tv-stage:empty { display: none; }
+.tv-stage { margin: 0.7rem 0; }
+.tv-stage video, .tv-stage iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #050606; }

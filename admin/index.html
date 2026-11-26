@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Office admin · Aswin’s World</title><link rel="stylesheet" href="/assets/office.css"></head>
+<body class="office-admin"><main>
+<header><h1>Office admin</h1><a href="/">Back to the world</a></header>
+<form id="login"><label>Admin email <input type="email" name="email" autocomplete="username" required></label><label>Password <input type="password" name="password" autocomplete="current-password" required></label><button>Sign in</button></form>
+<form id="editor" hidden><div id="fields"></div><div class="office-actions"><button>Save changes</button><button type="button" id="logout">Sign out</button></div></form>
+<p role="status" id="admin-status"></p>
+</main><script type="module" src="/admin/editor.js"></script></body></html>

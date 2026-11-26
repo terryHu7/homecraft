@@ -1,82 +1,62 @@
-<p align="center">
-  <a href="https://terryhu.cn">
-    <img src="docs/images/homecraft-logo-animated.gif" width="160" alt="Homecraft Logo">
-  </a>
-</p>
+# Aswin’s World
 
-<h1 align="center">Homecraft</h1>
+Aswin’s World is Aswin Raj’s interactive 3D developer portfolio. Explore a traditional Malabar tharavadu, head upstairs to the office computer to see the portfolio, or walk outside to the laterite pond and wooden jetty.
 
-<p align="center">
-  <strong>Homepage + Minecraft = Homecraft</strong>
-</p>
+## Explore the world
 
-<p align="center">
-  <b>中文</b> · <a href="README.en.md">English</a>
-</p>
+- Open the upstairs computer to browse the résumé, experience, skills, projects, and contact links.
+- Sit on the balcony or the teak oonjal, explore the courtyard, and visit the lotus pond.
+- Use the on-screen controls on mobile. On desktop, press **F** near an interactive object.
 
-## 个人网站即我的世界
+The world uses Three.js and native ES modules. It runs without a frontend build step and is based on [Homecraft](https://github.com/terryHu7/homecraft).
 
-过去我是个喜欢折腾网站的人，但模板换了又换，总感觉被什么东西困住了。
+## Run locally
 
-受我的世界、黑客帝国和元宇宙的启发，借助 AI，我把个人网站从二维网页建成了三维世界。
+Install Node.js 22 or later and Python 3. From the repository root, run:
 
-这个世界包罗万象，可以自由移动，里面建了篮球场，健身房，工作台，甚至还有昼夜交替和天气系统。
+```powershell
+npm ci
+python tools/serve.py
+```
 
-对于二维网页也完全可以内嵌进来，例如按 F 查看。而且得益于方块风的性能开销小，手机也能轻松访问。还可以随时按下 P 键或打开手机相机，自由调节画幅、光影、天气和自拍机位，截取高清图片一键分享。
+Open the localhost URL printed by the launcher. With no MongoDB configuration, the preview serves the public world with built-in portfolio content.
 
-逛上一圈，像是去朋友家做客了一趟。比起传统的网站，这样的相识或许更让人印象深刻。
+### Enable the admin editor
 
-一旦接受了这个设定，就再也回不去传统个人网站了…
+1. Copy `.env.example` to `.env` if you’re setting up the project for the first time.
+2. Set `MONGODB_URI` to your database connection string. Set `MONGODB_DB` if you want a database name other than `aswins_world`.
+3. Generate a signing secret and paste the output into `.env` as `JWT_SECRET`.
 
-## 实机截图 [🔗 Terry's Home](https://terryhu.cn)
+   ```powershell
+   node -p "require('node:crypto').randomBytes(32).toString('hex')"
+   ```
 
-<p align="center"><img src="docs/images/cover.webp" width="420" alt="封面"></p>
+4. Seed an admin account. In PowerShell 7, replace the example email with your own and enter a new password when prompted.
 
-| 篮球场 | 泳池 | 工作台 |
-| :---: | :---: | :---: |
-| <img src="docs/images/terry-court.webp" width="240" alt="篮球场"> | <img src="docs/images/terry-pool.webp" width="240" alt="泳池"> | <img src="docs/images/terry-desk.webp" width="240" alt="工作台"> |
-| **作品展示** | **健身房** | **天气系统** |
-| <img src="docs/images/terry-works.webp" width="240" alt="作品展示"> | <img src="docs/images/terry-gym.webp" width="240" alt="健身房"> | <img src="docs/images/terry-snow.webp" width="240" alt="下雪"> |
+   ```powershell
+   Read-Host -MaskInput 'Initial admin password' | npm run seed:office -- you@example.com
+   ```
 
-## 开始使用
+5. Run `npm run serve:office` and open `/admin` on the address it prints. The preview launcher also starts the Node office server automatically when `MONGODB_URI` is set.
 
-<p align="center"><img src="docs/images/starter.webp" width="640" alt="初始模板"></p>
+MongoDB stores admin accounts with bcrypt password hashes, refresh sessions, and published office content. The editor uses short-lived JWT access tokens and rotating refresh tokens in HTTP-only cookies. See the [admin guide](admin/README.md) for configuration and editing details.
 
-一行命令 `python3 tools/serve.py`即可运行。项目已内置初始模板、相关提示词与约束。
+## Project layout
 
-Terry's Home 完整实现见 [examples/terry-home](examples/terry-home)。
+| Path | Purpose |
+| --- | --- |
+| `world/` | Island layout, house, furniture, and outdoor scenes |
+| `assets/` | Portfolio interface, default content, and media |
+| `admin/` | Portfolio editor |
+| `server/` | Node server, authentication, seed command, and MongoDB access |
+| `engine/` | Shared Homecraft engine |
 
-后续更新见[更新指引](engine/UPDATING.md)。
+## Checks and deployment
 
-<a id="portal"></a>
-## 传送门 [🔗 申请收录](https://github.com/terryHu7/homecraft/issues/new/choose)
+Run `npm run check:site` for site configuration checks. With the preview running, use `npm run check` for desktop and mobile browser checks. Run `npm run check:pr` before pushing.
 
-<p align="center"><img src="https://terryhu.cn/share/homecraft-portal.webp" width="640" alt="传送门"></p>
+A static host such as GitHub Pages can serve the public 3D world with its built-in content. To publish edits from `/admin`, deploy the Node server and MongoDB. Set `NODE_ENV=production`, configure the HTTPS site origin in `PUBLIC_ORIGIN`, and inject the MongoDB URI and signing secret through the hosting environment. Commit `.env.example` as the setup template and keep your real `.env` private.
 
-类似传统博客的友链，传送门列表收录了大家的个人网站，方便互相"串门"。
+## License
 
-| [terryhu.cn](https://terryhu.cn) | [heikeji.com](https://heikeji.com) | [zhaur.com](https://zhaur.com) |
-| :---: | :---: | :---: |
-| <a href="https://terryhu.cn"><img src="docs/images/portal/terry.webp" width="240" alt="Terry"></a> | <a href="https://heikeji.com"><img src="docs/images/portal/heikeji.webp" width="240" alt="heikeji"></a> | <a href="https://zhaur.com"><img src="docs/images/portal/zhaur.webp" width="240" alt="zhaur"></a> |
-| [rsliyu.com](https://rsliyu.com) | [m.134688.xyz](https://m.134688.xyz/) | [home.aihot.kdns.fr](https://home.aihot.kdns.fr/) |
-| <a href="https://rsliyu.com"><img src="docs/images/portal/rsliyu.webp" width="240" alt="rsliyu"></a> | <a href="https://m.134688.xyz/"><img src="docs/images/portal/134688.webp" width="240" alt="134688"></a> | <a href="https://home.aihot.kdns.fr/"><img src="docs/images/portal/aihot.webp" width="240" alt="aihot"></a> |
-| [xinglong.tech](https://xinglong.tech/) | [xiaoshi.ond6.com](https://xiaoshi.ond6.com/) | [home.sinmu.xyz](https://home.sinmu.xyz) |
-| <a href="https://xinglong.tech/"><img src="docs/images/portal/xinglong.webp" width="240" alt="xinglong"></a> | <a href="https://xiaoshi.ond6.com/"><img src="docs/images/portal/xiaoshi.webp" width="240" alt="xiaoshi"></a> | <a href="https://home.sinmu.xyz"><img src="docs/images/portal/sinmu.webp" width="240" alt="sinmu"></a> |
-| [home.m.1game.fun](https://home.m.1game.fun:4443/) | [hbljx.github.io](https://hbljx.github.io/) | [blog.bwcxbk.com](https://blog.bwcxbk.com/) |
-| <a href="https://home.m.1game.fun:4443/"><img src="docs/images/portal/1game.webp" width="240" alt="1game"></a> | <a href="https://hbljx.github.io/"><img src="docs/images/portal/hbljx.webp" width="240" alt="hbljx"></a> | <a href="https://blog.bwcxbk.com/"><img src="docs/images/portal/bwcxbk.webp" width="240" alt="bwcxbk"></a> |
-| [murphy.red](https://www.murphy.red/world) | [wyc21.com](https://www.wyc21.com/) | [kidsseeghosts.art](https://kidsseeghosts.art/) |
-| <a href="https://www.murphy.red/world"><img src="docs/images/portal/murphy.webp" width="240" alt="murphy"></a> | <a href="https://www.wyc21.com/"><img src="docs/images/portal/wyc21.webp" width="240" alt="wyc21"></a> | <a href="https://kidsseeghosts.art/"><img src="docs/images/portal/kidsseeghosts.webp" width="240" alt="kidsseeghosts"></a> |
-| [cailgainey.us.ci](https://cailgainey.us.ci) | [gdg.nith.ac.in](https://gdg.nith.ac.in/labyrinth/) | |
-| <a href="https://cailgainey.us.ci"><img src="docs/images/portal/cailgainey.webp" width="240" alt="cailgainey"></a> | <a href="https://gdg.nith.ac.in/labyrinth/"><img src="docs/images/portal/gdg-nith.webp" width="240" alt="gdg-nith"></a> | |
-
-扫码加入 Homecraft 俱乐部:
-
-<p align="center"><img src="https://terryhu.cn/share/wechat-group.webp" width="280" alt="Homecraft 俱乐部"></p>
-
-## 微信赞赏码
-
-<p align="center">
-  <img src="docs/images/wechat-sponsor.webp" width="160" alt="微信赞赏码">
-</p>
-
-## 友情链接 [🔗 LINUX DO](https://linux.do)
+[MIT](LICENSE). The original Homecraft project is by [Terry Hu](https://github.com/terryHu7).

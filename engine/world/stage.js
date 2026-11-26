@@ -5,6 +5,7 @@ import * as L from '@world/layout.js';
 import { rng } from './textures.js';
 
 export const LAYER_SHADOW_ONLY = 1;
+const UP = new THREE.Vector3(0, 1, 0);
 
 // Fill (hemisphere) colours stay close to neutral: Neutral tone mapping keeps
 // saturation that ACES used to hide, so a slight green bias turned the oak
@@ -310,7 +311,7 @@ export function createStage(container, quality) {
     moodName = name; practicalLights = lights;
     mood = MOODS[name];
     const u = sky.material.uniforms;
-    u.uSunDir.value.fromArray(mood.sunDir).normalize();
+    u.uSunDir.value.fromArray(mood.sunDir).applyAxisAngle(UP, L.MAP_ROTATION || 0).normalize();
     sun.position.copy(sun.target.position).addScaledVector(u.uSunDir.value, 120);
     for (const light of lights) light.intensity = light.userData.base * mood.practical * (mood.night > 0 ? 1 : light.userData.day ?? 0.25);
     if (directionChanged || !sun.shadow.map) shadowDirty = true;

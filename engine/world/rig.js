@@ -105,7 +105,8 @@ export function createRig(camera, world) {
     const hit = world.grid.raycast(focus, dir, full, (type, group) => type.kind !== 'glass' && !world.hidden.has(group));
     const slope = world.viewBlock?.(focus, dir, full) ?? Infinity;
     const block = Math.min(hit ? hit.t : Infinity, slope);
-    const want = block < full ? Math.max(1.4, block - 0.4) : full;
+    const clearance = L.houseCutaway ? 0.15 : 0.4;
+    const want = block < full ? Math.max(L.houseCutaway ? 0.08 : 1.4, block - clearance) : full;
     reach = want < reach ? want : reach + (want - reach) * (1 - Math.exp(-dt * 3));
     reach = Math.min(reach, full);
     out.copy(focus).addScaledVector(dir, reach);
@@ -219,6 +220,11 @@ export function createRig(camera, world) {
   function cutaway(player, c) {
     if (!HOUSE) return;
     const p = player.pos;
+    if (L.houseCutaway) {
+      if (!firstPerson && !intro && L.houseCutaway(player, c, world)) return;
+      for (const group of ['roof', 'wallS', 'wallN', 'wallE', 'wallW']) world.setHidden(group, false);
+      return;
+    }
     // Keep the house whole in the aerial view; use the normal interior
     // cutaway once the camera has descended below the roof.
     if (intro && c.y >= HOUSE.height - 0.4) {

@@ -213,7 +213,10 @@ export function createAvatar(skinUrl, { onFace } = {}) {
       target.armR = Math.sin(idleT * 1.1) * 0.03;
       target.armL = -Math.sin(idleT * 1.1) * 0.03;
     }
-    if (s.fly >= 0) {
+    if (s.seated) {
+      Object.assign(target, { legL: -1.46, legR: -1.46, legRz: 0.07, legLz: -0.07,
+        armR: -0.22, armL: -0.22, armRz: 0.12, armLz: -0.12, lean: 0.05 });
+    } else if (s.fly >= 0) {
       // Flying: legs trail, arms sweep back and out, leaning into the speed.
       const f = s.fly, drift = Math.sin(idleT * 2.2) * 0.05;
       Object.assign(target, { legR: 0.18 + 0.14 * f + drift, legL: 0.12 + 0.14 * f - drift, armR: 0.3 + 0.55 * f, armL: 0.3 + 0.55 * f, armRz: -0.22 - 0.2 * f, armLz: 0.22 + 0.2 * f, lean: 0.06 + 0.45 * f });

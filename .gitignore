@@ -6,3 +6,12 @@ tools/.check/
 tools/.serve-url
 .impeccable/
 .release/
+
+# Local credentials and generated office data
+.env
+.env.*
+!.env.example
+.office-data/
+npm-debug.log*
+__pycache__/
+*.pyc

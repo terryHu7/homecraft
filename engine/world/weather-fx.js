@@ -18,7 +18,7 @@ const POOL = L.POOL;
 const SHELTER = { floor: -2, steps: 4, ...(L.SHELTER || { x0: L.ISLAND.x0 - 8, z0: L.ISLAND.z0 - 8, w: L.ISLAND.x1 - L.ISLAND.x0 + 16, d: L.ISLAND.z1 - L.ISLAND.z0 + 16 }) };
 const SEA = -1.08;
 
-export function buildShelter(grid, ground) {
+export function buildShelter(grid, ground, roofTopAt) {
   const { x0, z0, w, d, floor, steps } = SHELTER;
   const heights = new Float32Array(w * d), data = new Uint8Array(w * d);
   const [gx, gy, gz] = grid.min, [sx, sy, sz] = grid.size;
@@ -30,6 +30,7 @@ export function buildShelter(grid, ground) {
       for (let y = gy + sy - 1; y >= gy; y--) if (grid.get(x, y, z)) { top = y + 1; break; }
     }
     top = Math.max(top, ground.topAt(x + 0.5, z + 0.5)?.y ?? SEA);
+    if (roofTopAt) top = Math.max(top, roofTopAt(x + 0.5, z + 0.5));
     if (POOL && x >= POOL.x0 && x < POOL.x1 && z >= POOL.z0 && z < POOL.z1) top = Math.max(top, POOL.water);
     heights[i + j * w] = top;
     data[i + j * w] = Math.max(0, Math.min(255, Math.round((top - floor) * steps)));
@@ -239,7 +240,7 @@ const WIND = new THREE.Vector2(0.82, 0.57).normalize();
 const wrap = (v, size) => ((v % size) + size) % size;
 
 export function createWeatherFx({ stage, world, quality, sound }) {
-  const shelter = buildShelter(world.grid, world.ground);
+  const shelter = buildShelter(world.grid, world.ground, world.roofTopAt);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const common = {
     uCenter: { value: new THREE.Vector3() }, uCam: { value: new THREE.Vector3() },
@@ -346,6 +347,7 @@ export function createWeatherFx({ stage, world, quality, sound }) {
 
   return {
     shelter, rain: rain.mesh, snow: snow.mesh, lightning: bolt.mesh, setWeather, update, settle,
+    get rainIntensity() { return now.rain; },
     get state() { return { ...now, wet, cover }; },
     // Draw every layer once under the loading screen so no weather choice
     // compiles a shader or uploads a buffer later.

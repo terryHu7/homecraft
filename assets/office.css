@@ -1,0 +1,24 @@
+.office-admin { background:#111c1b; color:#eee8da; font:16px system-ui,sans-serif; margin:0; }
+.office-admin main { max-width:54rem; padding:1.5rem; margin:auto; }
+.office-admin a,.office-monitor a { color:#9ce5c5; }
+.office-admin label { display:grid; gap:.25rem; margin:.6rem 0; }
+.office-admin input,.office-admin textarea { box-sizing:border-box; width:100%; padding:.6rem; color:#f5f1e7; background:#142420; border:1px solid #607e70; border-radius:.25rem; font:inherit; }
+.office-admin fieldset { border:1px solid #607e70; margin:1rem 0; padding:1rem; }
+.office-admin button,.office-monitor button { color:#e9f4e8; background:#244535; border:1px solid #628976; border-radius:.3rem; padding:.55rem .75rem; cursor:pointer; font:inherit; }
+.office-admin .office-actions { position:sticky; bottom:0; padding:.8rem 0; background:#111c1b; display:flex; gap:.6rem; }
+.office-admin [hidden] { display:none; }
+.office-monitor { box-sizing:border-box; position:fixed; inset:0; margin:auto; width:min(78vw,960px); height:min(78dvh,540px); color:#e6f4e9; background:#142333; border:10px solid #20262e; border-bottom-width:17px; box-shadow:0 0 0 2px #47505d,0 12px 40px #0009; border-radius:.65rem; padding:0; overflow:hidden; }
+.office-monitor[open] { display:grid; grid-template-rows:auto minmax(0,1fr); }
+.office-monitor nav { display:flex; align-items:center; gap:.35rem; flex-wrap:wrap; padding:.65rem; background:#101a25; border-bottom:1px solid #43546a; }
+.office-monitor [data-office-body] { min-height:0; overflow:auto; overscroll-behavior:contain; padding:.8rem 1rem; overflow-wrap:anywhere; scrollbar-gutter:stable; }
+.office-monitor [data-office-exit] { margin-left:auto; background:#76252c; border-color:#b44a55; color:#fff1f1; }
+.office-monitor button[aria-pressed="true"] { background:#397557; }
+.office-monitor::backdrop { background:rgba(4,12,10,.16); }
+.office-monitor img { display:block; width:min(100%,600px); height:auto; margin:.65rem auto; }
+.office-monitor article { border-bottom:1px solid #496759; padding:.65rem 0; white-space:pre-line; }
+.office-monitor h3,.office-monitor p { margin:.4rem 0; }
+@media(max-width:640px) {
+  .office-monitor { width:94vw; height:80dvh; border-width:7px 7px 12px; }
+  .office-monitor nav { padding:.45rem; }
+  .office-monitor nav button { padding:.4rem .5rem; font-size:.8rem; }
+}

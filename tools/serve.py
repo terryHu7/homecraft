@@ -6,13 +6,51 @@
 #   With no port, the OS picks a free one and the browser opens that address.
 #   --lan also lets phones on the same Wi-Fi open it (and anyone else on that network, while it runs).
 #   The chosen address is printed, and written to tools/.serve-url for the checks.
-import functools, http.server, os, pathlib, signal, socket, sys, threading, webbrowser
+import functools, http.server, os, pathlib, signal, socket, subprocess, sys, threading, webbrowser
 
 args = [a for a in sys.argv[1:] if a != '--lan']
 lan = '--lan' in sys.argv[1:]
 chosen = int(args[0]) if args else 0
 root = pathlib.Path(__file__).resolve().parent.parent
 url_file = root / 'tools' / '.serve-url'
+host = '0.0.0.0' if lan else '127.0.0.1'
+
+def open_browser(url):
+    try:
+        webbrowser.open(url)
+    except OSError:
+        pass
+
+def stop(_signum, _frame):
+    raise KeyboardInterrupt
+
+for name in ('SIGTERM', 'SIGHUP'):
+    if hasattr(signal, name):
+        signal.signal(getattr(signal, name), stop)
+
+node = ['node', '--env-file-if-exists=.env']
+if os.environ.get('MONGODB_URI') or (root / '.env').exists():
+    configured = subprocess.run(node + ['-e', 'process.exit(process.env.MONGODB_URI ? 0 : 1)'], cwd=root)
+    if configured.returncode == 0:
+        env = {**os.environ, 'HOST': host, 'PORT': str(chosen)}
+        with subprocess.Popen(node + ['server/office.js'], cwd=root, env=env, stdout=subprocess.PIPE, text=True) as office:
+            url = ''
+            try:
+                url = office.stdout.readline().strip()
+                if url.startswith('http://127.0.0.1:'):
+                    print(url, flush=True)
+                    url_file.write_text(url)
+                    if not chosen:
+                        threading.Timer(0.2, open_browser, args=(url,)).start()
+                raise SystemExit(office.wait())
+            except KeyboardInterrupt:
+                office.terminate()
+            finally:
+                if url and url_file.exists() and url_file.read_text() == url:
+                    url_file.unlink()
+        raise SystemExit(0)
+    if configured.returncode != 1:
+        raise SystemExit('Could not read the Node office configuration.')
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     left = None  # bytes still to send for a range reply
@@ -24,6 +62,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def send_head(self):
+        pathname = pathlib.Path(self.translate_path(self.path)).relative_to(root)
+        if any(part.startswith('.') for part in pathname.parts):
+            self.send_error(404)
+            return None
         spec = self.headers.get('Range', '')
         path = self.translate_path(self.path)
         if not spec.startswith('bytes=') or not os.path.isfile(path):
@@ -67,7 +109,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             outputfile.write(chunk)
             self.left -= len(chunk)
 
-host = '0.0.0.0' if lan else '127.0.0.1'
 try:
     server = http.server.ThreadingHTTPServer((host, chosen), functools.partial(Handler, directory=str(root)))
 except OSError:
@@ -86,18 +127,8 @@ if lan:
     finally:
         probe.close()
 url_file.write_text(url)
-def open_browser():
-    try:
-        webbrowser.open(url)
-    except OSError:
-        pass
 if not chosen:
-    threading.Timer(0.2, open_browser).start()
-def stop(_signum, _frame):
-    raise KeyboardInterrupt
-for name in ('SIGTERM', 'SIGHUP'):
-    if hasattr(signal, name):
-        signal.signal(getattr(signal, name), stop)
+    threading.Timer(0.2, open_browser, args=(url,)).start()
 try:
     server.serve_forever()
 except KeyboardInterrupt:

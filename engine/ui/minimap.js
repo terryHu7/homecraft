@@ -4,6 +4,8 @@
 import * as L from '@world/layout.js';
 
 const ISLAND = L.ISLAND, STATIONS = L.STATIONS || [], POOL = L.POOL || null, HOUSE = L.HOUSE || null;
+const mapRotation = L.MAP_ROTATION || 0;
+const mapCos = Math.cos(mapRotation), mapSin = Math.sin(mapRotation);
 import { icon } from './icons.js';
 import { nameOf } from '../lang.js';
 
@@ -144,7 +146,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       drawBlip(ctx, W / 2 + bx, H / 2 + bz, img, 18 * dpr);
     }
     // North marker on the rim.
-    const nAngle = yaw - Math.PI / 2;
+    const nAngle = yaw - mapRotation - Math.PI / 2;
     const nr = W / 2 - 11 * dpr;
     const npx = W / 2 + Math.cos(nAngle) * nr, npz = H / 2 + Math.sin(nAngle) * nr;
     ctx.fillStyle = 'rgba(12, 14, 16, .85)';
@@ -175,7 +177,10 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     if (open) {
       const r = big.getBoundingClientRect();
       big.width = Math.round(r.width * dpr); big.height = Math.round(r.height * dpr);
-      const fitScale = Math.min(big.width / (ISLAND.x1 - ISLAND.x0), big.height / (ISLAND.z1 - ISLAND.z0)) * 0.94;
+      const width = ISLAND.x1 - ISLAND.x0, depth = ISLAND.z1 - ISLAND.z0;
+      const mapWidth = width * Math.abs(mapCos) + depth * Math.abs(mapSin);
+      const mapHeight = width * Math.abs(mapSin) + depth * Math.abs(mapCos);
+      const fitScale = Math.min(big.width / mapWidth, big.height / mapHeight) * 0.94;
       view = { cx: (ISLAND.x0 + ISLAND.x1) / 2, cz: (ISLAND.z0 + ISLAND.z1) / 2, scale: fitScale, min: fitScale * 0.9, max: fitScale * 4 };
       drawBig();
     }
@@ -187,7 +192,10 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
   function toWorld(clientX, clientY) {
     const r = big.getBoundingClientRect();
     const sx = (clientX - r.left) * dpr - big.width / 2, sy = (clientY - r.top) * dpr - big.height / 2;
-    return { x: view.cx + sx / view.scale, z: view.cz + sy / view.scale };
+    return {
+      x: view.cx + (sx * mapCos + sy * mapSin) / view.scale,
+      z: view.cz + (-sx * mapSin + sy * mapCos) / view.scale,
+    };
   }
   let pan = null;
   big.addEventListener('pointerdown', e => { big.setPointerCapture(e.pointerId); pan = { x: e.clientX, y: e.clientY, moved: false }; });
@@ -195,7 +203,11 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     if (!pan) return;
     const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
     if (Math.hypot(dx, dy) > 4) pan.moved = true;
-    if (pan.moved) { view.cx -= dx * dpr / view.scale; view.cz -= dy * dpr / view.scale; pan.x = e.clientX; pan.y = e.clientY; drawBig(); }
+    if (pan.moved) {
+      view.cx -= (dx * mapCos + dy * mapSin) * dpr / view.scale;
+      view.cz -= (-dx * mapSin + dy * mapCos) * dpr / view.scale;
+      pan.x = e.clientX; pan.y = e.clientY; drawBig();
+    }
   });
   big.addEventListener('pointerup', e => {
     if (pan && !pan.moved) { const w = toWorld(e.clientX, e.clientY); onPick(w.x, w.z); toggleBig(false); }
@@ -217,9 +229,16 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     bctx.fillStyle = '#9fc6e8';
     bctx.fillRect(0, 0, W, H);
     bctx.imageSmoothingEnabled = false;
-    const ox = W / 2 - (view.cx - ISLAND.x0) * s, oz = H / 2 - (view.cz - ISLAND.z0) * s;
-    bctx.drawImage(mapImage, ox, oz, mapImage.width * s / PPM, mapImage.height * s / PPM);
-    const P = (x, z) => [ox + (x - ISLAND.x0) * s, oz + (z - ISLAND.z0) * s];
+    bctx.save();
+    bctx.translate(W / 2, H / 2);
+    bctx.rotate(mapRotation);
+    bctx.drawImage(mapImage, (ISLAND.x0 - view.cx) * s, (ISLAND.z0 - view.cz) * s,
+      mapImage.width * s / PPM, mapImage.height * s / PPM);
+    bctx.restore();
+    const P = (x, z) => {
+      const dx = (x - view.cx) * s, dz = (z - view.cz) * s;
+      return [W / 2 + dx * mapCos - dz * mapSin, H / 2 + dx * mapSin + dz * mapCos];
+    };
     bctx.font = `600 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif`;
     bctx.textAlign = 'left'; bctx.textBaseline = 'middle';
     for (const { s: st, img } of blips) {
@@ -238,7 +257,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     const [px, py] = P(p.x, p.z);
     bctx.save();
     bctx.translate(px, py);
-    bctx.rotate(-p.heading + Math.PI);
+    bctx.rotate(mapRotation - p.heading + Math.PI);
     const a = 11 * dpr;
     bctx.beginPath();
     bctx.moveTo(0, -a); bctx.lineTo(a * 0.72, a * 0.8); bctx.lineTo(0, a * 0.38); bctx.lineTo(-a * 0.72, a * 0.8); bctx.closePath();

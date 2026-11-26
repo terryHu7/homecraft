@@ -257,7 +257,7 @@ async function boot() {
   stage.scene.add(player.web);
   const rig = createRig(stage.camera, world);
   // The world's own moving parts (a sailboat, a Vertec, …): build.js setup(app).
-  const extras = W.setup?.({ stage, world, nav, player, avatar, sound, rig, quality, config }) || {};
+  const extras = W.setup?.({ stage, world, nav, player, avatar, sound, rig, quality, config, weatherFx }) || {};
   progress(0.85);
 
   // Clock and weather start in automatic mode on every visit. The corner
@@ -406,10 +406,10 @@ async function boot() {
   }
   function nearestTarget() {
     let best = null, bestD = 2.6;
-    for (const s of [...publicStations, ...(portalStation ? [portalStation] : [])]) {
+    for (const s of [...publicStations, ...(portalStation ? [portalStation] : []), ...(extras.interactionTargets || [])]) {
       if (!s.at) continue;
       const d = targetDistance(s);
-      if (d < bestD && Math.abs((s.floor || 0) - Math.max(0, player.floorY)) < 1.5) { best = s; bestD = d; }
+      if (d < Math.min(bestD, s.range ?? 2.6) && Math.abs((s.floor || 0) - Math.max(0, player.floorY)) < 1.5) { best = s; bestD = d; }
     }
     return best;
   }
@@ -425,6 +425,7 @@ async function boot() {
     promptEl.hidden = !show;
   }
   function useTarget(id) {
+    if (extras.interact?.(id)) return;
     if (id === 'portal') { openPortal(); return; }
     if (panel.open && openStation === id) closePage();
     else openPage(id);
@@ -463,8 +464,9 @@ async function boot() {
     const s = STATIONS.find(s => s.id === id);
     if (!s) { rig.skipIntro(); openPage(id); tooltip.hidden = true; return; }
     rig.skipIntro();
-    if (s.page === false) closePage(); else openPage(id);
+    if (s.page === false || extras.handlesInteraction?.(id)) closePage(); else openPage(id);
     player.teleport(...s.at, s);
+    extras.interact?.(id);
     rig.recenter(player, true);
     if (s.show) rig.showcase(...(stage.camera.aspect < 0.8 && s.showPortrait ? s.showPortrait : s.show));
     marker.show(player.pos.x, player.floorY, player.pos.z, 0xf2ead7);
@@ -786,10 +788,11 @@ async function boot() {
 
   // ---------- Input ----------
   const input = createInput(stage.renderer.domElement, {
-    blocked: () => minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!portal?.busy || photoStudio.isOpen(),
+    blocked: () => minimap.isBigOpen() || panel.open || extras.officeOpen || weatherMenuOpen() || isTravelling() || !!portal?.busy || photoStudio.isOpen(),
     shortcutsBlocked: () => minimap.isBigOpen() || weatherMenuOpen() || isTravelling() || !!portal?.busy || photoStudio.isOpen(),
-    escape: () => { if (photoStudio.isOpen()) photoStudio.close(); else if (weatherMenuOpen()) toggleWeatherMenu(false, true); else if (minimap.isBigOpen()) minimap.toggleBig(false); else if (panel.open) closePage(); else if (phone.up) { if (!phone.back()) togglePhone(false); } else toggleWeb(false); },
+    escape: () => { if (extras.officeOpen) $('#billiards[open], #office-monitor[open]')?.close(); else if (photoStudio.isOpen()) photoStudio.close(); else if (weatherMenuOpen()) toggleWeatherMenu(false, true); else if (minimap.isBigOpen()) minimap.toggleBig(false); else if (panel.open) closePage(); else if (phone.up) { if (!phone.back()) togglePhone(false); } else toggleWeb(false); },
     interact: () => {
+      if (player.seated) { player.standUp(); rig.recenter(player); return; }
       const s = nearestTarget();
       if (s) { useTarget(s.id); return; }
       // First person: whatever sits under the crosshair.
@@ -924,7 +927,7 @@ async function boot() {
     requestAnimationFrame(loop);
     if (document.hidden) { last = now; return; }
     const elapsed = (now - last) / 1000;
-    const paused = minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || photoStudio.isOpen();
+    const paused = minimap.isBigOpen() || panel.open || extras.officeOpen || weatherMenuOpen() || isTravelling() || photoStudio.isOpen();
     if (paused && !wasPaused) { player.cancel(); input.clear(); }
     wasPaused = paused;
     // Panels pause movement, but the visible world keeps rendering every frame.

@@ -1,9 +1,11 @@
 {
   "version": 1,
-  "name": "My Home",
+  "name": "ASWIN'S WORLD",
   "url": "",
-  "logo": "engine/assets/homecraft-logo.png",
-  "intro": "",
-  "lang": ["zh", "en"],
+  "logo": "assets/aswin-world.svg",
+  "intro": "Explore Aswin Raj’s developer portfolio, projects, and interests in a traditional Malabar Tharavadu.",
+  "lang": [
+    "en"
+  ],
   "homecraft": true
 }

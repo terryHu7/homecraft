@@ -47,6 +47,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   // `island` names the outside surface underfoot (null on the house's grid);
   // `level` is the height of whatever the player is standing on.
   let mode = 'ground', island = null, level = 0, pilot = null, standing = null;
+  let chair = null;
   const velocity = new THREE.Vector3();
   const solidAt = (x, y, z) => !!grid?.type(x, y, z);
   // A web-zip, Spider-Man style: a web shoots from their hand to the point
@@ -109,6 +110,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
 
   function cancel() { path = null; goal = null; then = null; rush = false; through = false; }
   function goTo(x, z, station = null) {
+    if (chair) standUp();
     if (mode !== 'ground') return false;
     if (island && nav.canStand(pos.x, pos.z, level) && nav.canStand(x, z)) {
       const found = nav.findPath(pos, { x, z });
@@ -146,14 +148,36 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   function visit(id) { const s = STATIONS.find(s => s.id === id); return s ? goTo(...s.at, s) : false; }
   function settle() { velocity.set(0, 0, 0); vy = 0; speed = 0; pilot = null; zip = null; ladder = null; web.visible = false; standing = null; swim = null; flewOut = 0; }
   function teleport(x, z, station = null) {
+    const deck = station?.floor >= 2 && ground?.canStand(x, z, station.floor);
+    const stand = deck?.site ? { x, z, ...deck } : nav.nearestStand(x, z);
+    if (!stand || (!stand.site && !nav.canStand(stand.x, stand.z))) return false;
     cancel(); settle();
-    const stand = nav.nearestStand(x, z);
-    if (!stand || !nav.canStand(stand.x, stand.z)) return false;
-    pos.set(stand.x, 0, stand.z); mode = 'ground'; island = null;
-    y = level = nav.heightAt(pos.x, pos.z);
+    chair = null;
+    pos.set(stand.x, 0, stand.z); mode = 'ground'; island = stand.site ?? null;
+    standing = stand.site ? stand : null;
+    y = level = stand.y ?? nav.heightAt(pos.x, pos.z);
     if (station?.look) heading = Math.atan2(station.look[0] - pos.x, station.look[1] - pos.z);
     place(0);
     return true;
+  }
+  function sitAt(seat) {
+    const deck = seat.floor >= 2 && ground?.canStand(seat.standX, seat.standZ, seat.floor);
+    const standFloor = deck?.y ?? nav.heightAt(seat.standX, seat.standZ);
+    if (mode !== 'ground' || Math.hypot(pos.x - seat.standX, pos.z - seat.standZ) > 2.7 ||
+        Math.abs(y - standFloor) > 0.6 ||
+        (!deck && !nav.canStand(seat.standX, seat.standZ))) return false;
+    cancel(); settle();
+    chair = seat;
+    mode = 'seated'; island = null;
+    pos.set(seat.x, 0, seat.z);
+    y = level = seat.y - 0.59;
+    heading = seat.heading;
+    place(0.1);
+    return true;
+  }
+  function standUp() {
+    if (!chair) return false;
+    return teleport(chair.standX, chair.standZ, chair);
   }
   function arrive() {
     const s = goal, next = then; path = null; goal = null; then = null; rush = false; through = false;
@@ -163,10 +187,12 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
 
   function jump() {
+    if (chair) { standUp(); return; }
     if (mode !== 'ground') return;
     mode = 'air'; vy = JUMP;
   }
   function startFlying() {
+    if (chair) standUp();
     if (mode === 'fly') return;
     const fromWater = leaveWater(0.7);
     cancel(); ladder = null; mode = 'fly'; island = null; standing = null; velocity.set(0, 0, 0); vy = 0; zip = null; web.visible = false;
@@ -665,17 +691,18 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
 
   function update(dt, input, cameraYaw, firstPerson = false) {
+    if (chair && (input.x || input.z || input.up || input.down)) standUp();
     if (mode === 'zip') zipping(dt);
     else if (mode === 'swim') swimming(dt, input, cameraYaw);
     else if (mode === 'ladder') climbLadder(dt, input, cameraYaw);
     else if (mode === 'fly') fly(dt, input, cameraYaw);
     else if (mode === 'air') fall(dt, input, cameraYaw);
-    else {
+    else if (mode === 'ground') {
       walk(dt, input, cameraYaw, false);
       if (mode === 'ground') y += (level - y) * (1 - Math.exp(-dt * 18));
     }
     // In first person the body faces the view, except lying on the pool's floor.
-    if (firstPerson && !(mode === 'swim' && swim.rest)) heading = cameraYaw + Math.PI;
+    if (firstPerson && !chair && !(mode === 'swim' && swim.rest)) heading = cameraYaw + Math.PI;
     place(dt, input);
     drawWeb();
   }
@@ -694,7 +721,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     }
     avatar.root.position.set(pos.x, y, pos.z); avatar.root.rotation.y = heading;
     const flying = mode === 'fly', horizontal = flying ? Math.hypot(velocity.x, velocity.z) : speed;
-    avatar.update(dt, { speed: flying || mode === 'zip' ? 0 : speed / RUN * (input.run ? 1 : 1.6), run: !flying && input.run && speed > WALK, fly: flying ? Math.min(1, horizontal / FLY) : -1, air: mode === 'air', zip: mode === 'zip' });
+    avatar.update(dt, { speed: flying || mode === 'zip' ? 0 : speed / RUN * (input.run ? 1 : 1.6), run: !flying && input.run && speed > WALK, fly: flying ? Math.min(1, horizontal / FLY) : -1, air: mode === 'air', zip: mode === 'zip', seated: !!chair });
     const below = floorBelow(pos.x, pos.z, y + 0.01), lift = y - below.y;
     avatar.blob.position.set(pos.x, below.y + 0.015, pos.z);
     if (avatar.blob.material) { avatar.blob.visible = below.y > SEA && lift < 8; avatar.blob.material.opacity = 0.32 * Math.max(0, 1 - lift / 8); }
@@ -713,13 +740,14 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
 
   return {
-    pos, web, update, goTo, follow, walkThrough, visit, cancel, teleport, jump, toggleFly, startFlying, stopFlying, flyTo, zipTo,
+    pos, web, update, goTo, follow, walkThrough, visit, cancel, teleport, sitAt, standUp, jump, toggleFly, startFlying, stopFlying, flyTo, zipTo,
     enterPool, swimTo, leavePool, toggleDive, flyIntoPool,
     get y() { return y; }, get heading() { return heading; }, get floorY() { return y; },
     get moving() { return speed > 0.3 || !!zip || (mode === 'fly' && velocity.lengthSq() > 0.1) || (mode === 'swim' && Math.hypot(swim.vx, swim.vz) > 0.3); },
     get travelling() { return !!path?.length || !!pilot || !!zip; }, get path() { return path; },
     get zipping() { return !!zip; },
     get flying() { return mode === 'fly'; }, get island() { return island; }, get mode() { return mode; },
+    get seated() { return !!chair; },
     // Flying themselves to a tapped place, rather than steered by hand.
     get piloting() { return !!pilot; },
     get swimming() { return mode === 'swim'; },
