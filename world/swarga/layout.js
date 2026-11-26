@@ -1,5 +1,7 @@
+import { gardenFloorAt } from './nandana-layout.js';
+
 export const CORE_ISLAND = { x0: -30, x1: 30, z0: -25, z1: 25 };
-export const ISLAND = { ...CORE_ISLAND, x1: 71 };
+export const ISLAND = { x0: -62, x1: 71, z0: -25, z1: 102 };
 export const DANCE_HALL = { x: 50, x0: 34, x1: 66, z0: -14, z1: 14, floor: 1 };
 export const DANCE_BRIDGE = { x0: 29, x1: 34, z0: 15, z1: 22 };
 export const DANCE_FLOOR = { x0: 40, x1: 60, z0: -6, z1: 6, y: 1.34 };
@@ -10,7 +12,7 @@ export const INTRO = { pos: [31, 18, 41], portrait: [30, 24, 51], look: [0, 3, -
 export const HOUSE = { x0: -12, x1: 12, z0: -21, z1: -3, height: 11 };
 export const EXIT = { x: 0, z: -1 };
 export const DOORWAY = [{ ...EXIT, y: 2 }];
-export const LIGHT_VOLUME = { min: [-15, 0, -23], extent: [85, 13, 43], size: [136, 22, 68] };
+export const LIGHT_VOLUME = { min: [-44, 0, -23], extent: [114, 13, 117], size: [182, 22, 187] };
 
 export const STAIRS = { x0: -3, x1: 3, z0: -1, count: 6, tread: 0.5 };
 export const DAIS = { x0: -3, x1: 3, z0: -20, z1: -14 };
@@ -32,7 +34,7 @@ export function floorAt(x, z) {
   if (x >= STAIRS.x0 && x < STAIRS.x1 && z >= STAIRS.z0 && z < STAIRS.z0 + STAIRS.count * STAIRS.tread) {
     return (STAIRS.count - Math.floor((z - STAIRS.z0) / STAIRS.tread)) / STAIRS.count;
   }
-  return 0;
+  return gardenFloorAt(x, z);
 }
 
 const station = (id, name, icon, at, look, floor, description) =>
@@ -50,6 +52,13 @@ export const STATIONS = [
   station('menaka', 'Menaka', 'about', [52, 1], [52, -1.1], DANCE_FLOOR.y, 'Menaka is an apsara in Hindu tradition.'),
   station('tilottama', 'Tilottama', 'about', [56, 2.2], [56, .2], DANCE_FLOOR.y, 'Tilottama is an apsara in Hindu tradition.'),
   station('gandharva-musicians', 'Gandharva musicians', 'blog', [50, -7], [50, -10.65], DANCE_HALL.floor, 'Gandharvas are associated with celestial music in Hindu tradition. This ensemble features veena, flute, and mridangam.'),
+  station('nandana-entrance', 'Nandana Vana', 'portal', [-16.5, 34], [-16.5, 37], 0, 'Nandana Vana is a celestial garden associated with Indra in Hindu tradition.'),
+  station('kalpavriksha', 'Kalpavriksha', 'about', [-12, 49], [-12, 55], 0, 'Kalpavriksha is traditionally described in Hindu mythology as a wish-fulfilling celestial tree.'),
+  station('lotus-lake', 'Lotus Lake', 'eye', [20, 61], [24.5, 63], 0, 'A marble crossing overlooks flowering lotuses and swans.'),
+  station('celestial-waterfalls', 'Celestial Waterfalls', 'eye', [-3.5, 79], [-6, 87], 0, 'Two cascades descend from marble terraces into the garden pools.'),
+  station('lotus-pavilion', 'Lotus Pavilion', 'blog', [20, 47.5], [20, 50], 0, 'The lotus-roofed pavilion looks across the lake.'),
+  station('garden-mandapam', 'Golden Garden Mandapam', 'portal', [-31, 50], [-31, 53], 0, 'An open pavilion with gilded columns, arches, and marble seating.'),
+  station('viewing-pavilion', 'Celestial Viewing Pavilion', 'eye', [27, 85.2], [27, 87.7], 1.7, 'An elevated terrace offers a view of the garden and the palace beyond.'),
 ];
 
 export const AIRAVATA_TUSKS = 4; // TODO(aswin): Confirm whether to keep four tusks.

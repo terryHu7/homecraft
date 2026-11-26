@@ -5,5 +5,5 @@ export default {
   ...home,
   name: 'Swarga',
   start: { weather: 'clear', time: 'dusk' },
-  dock: STATIONS.filter(({ id }) => !['rambha', 'urvashi', 'menaka', 'tilottama'].includes(id)).map(({ id }) => id),
+  dock: [...STATIONS.slice(0, 6).map(({ id }) => id), 'gandharva-musicians', 'nandana-entrance', 'kalpavriksha'],
 };

@@ -3,6 +3,8 @@ import { BoxBatch } from '@engine/world/blocks.js';
 import { setupAiravata } from './airavata.js';
 import { buildDanceHall } from './dance-hall.js';
 import { setupDance } from './dance-animation.js';
+import { buildNandana, buildNandanaClouds, setupNandanaClouds } from './nandana.js';
+import { setupNandanaAnimals } from './nandana-animals.js';
 import { CORE_ISLAND, DAIS, DAIS_STEP, DANCE_BRIDGE, HOUSE, STAIRS, STATIONS } from './layout.js';
 
 const marble = { tex: 'plaster', tint: 0xfff1df };
@@ -214,6 +216,12 @@ export function build({ grid, layer }) {
   const mandapam = new SceneryBatch(layer);
   const hallDomes = buildDanceHall(grid, mandapam, obstacles, bakes);
   batches.mandapam = mandapam;
+  batches.nandana = new SceneryBatch(layer);
+  batches.nandanaPlants = new SceneryBatch(layer);
+  batches.nandanaWater = new SceneryBatch(layer);
+  batches.nandanaClouds = new SceneryBatch(layer);
+  buildNandana(grid, batches.nandana, batches.nandanaPlants, batches.nandanaWater, obstacles, bakes);
+  buildNandanaClouds(batches.nandanaClouds);
   const hotspots = STATIONS.map(({ id, floor, look: [x, z] }) => ({
     id,
     box: new THREE.Box3(new THREE.Vector3(x - 0.85, floor + 0.06, z - 0.55),
@@ -242,10 +250,14 @@ export function setup({ stage, world, player, rig }) {
   };
   const updateAiravata = setupAiravata({ stage, world });
   const updateDance = setupDance({ stage, world });
+  const updateWildlife = setupNandanaAnimals({ stage, world });
+  const updateClouds = setupNandanaClouds(stage, world.groups.nandanaClouds);
   return {
     update(dt) {
       updateAiravata(dt);
       updateDance(dt);
+      updateWildlife(dt);
+      updateClouds(dt);
     },
   };
 }
