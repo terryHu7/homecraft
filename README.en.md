@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">中文</a> · <b>English</b>
+  <a href="README.md">中文</a> · <b>English</b> · <a href="https://github.com/terryHu7/homecraft-plugins">Homecraft Plugins</a>
 </p>
 
 ## A personal website as a 3D world
@@ -22,7 +22,7 @@ Inspired by Minecraft, The Matrix and the metaverse, I used AI to turn my person
 
 You can explore it freely. I've built a basketball court, a gym and a workbench, and added a day–night cycle and a weather system.
 
-You can also embed regular web pages and open them by pressing F. The block-based graphics keep rendering demands low, so the site works on phones too. Press P or tap the phone's Camera app to open the Photo Studio: pick 16:9/9:16/1:1 ratios, fine-tune lighting and weather, frame an in-world selfie, and export crisp screenshots to share.
+You can also embed regular web pages. The block-based graphics keep rendering demands low, so the site works on phones too.
 
 Exploring the site feels like visiting a friend's home. Compared with a traditional website, it may be a more memorable way to get to know someone.
 
@@ -47,6 +47,12 @@ Run `python3 tools/serve.py` to start the site. The project includes a starter t
 The full source of Terry's Home is in [examples/terry-home](examples/terry-home).
 
 For future updates, see the [update guide](engine/UPDATING.md).
+
+## Plugin System [🔗 Homecraft Plugins](https://github.com/terryHu7/homecraft-plugins)
+
+Homecraft includes a built-in plugin system. Standard plugins install into `world/plugins/<id>/` and are enabled through `home.config.js`, leaving `engine/` untouched across upgrades.
+
+The plugin repository is maintained at [Homecraft Plugins](https://github.com/terryHu7/homecraft-plugins). See [docs/plugins.md](docs/plugins.md) for the plugin host API.
 
 <a id="portal"></a>
 ## Portal [🔗 Request listing](https://github.com/terryHu7/homecraft/issues/new/choose)
@@ -84,4 +90,6 @@ The portal lists personal websites and lets visitors travel between them, much l
   <sub>PayPal / Ko-fi &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Card / Apple Pay</sub>
 </p>
 
-## Links [🔗 LINUX DO](https://linux.do)
+## Links
+
+[LINUX DO](https://linux.do) · [V2EX](https://www.v2ex.com) · [NodeSeek](https://www.nodeseek.com)
