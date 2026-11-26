@@ -1,7 +1,11 @@
 import { seedAdmin } from './auth.js';
 import { databaseIssue } from './database.js';
 
-const email = process.argv[2] || 'aswinrajcholakuzhi@gmail.com';
+const email = process.argv[2]?.trim();
+if (!email) {
+  console.error('An admin email is required. Usage: npm run seed:office -- you@example.com');
+  process.exit(1);
+}
 try {
   if (process.stdin.isTTY) throw Error('Pass the seed password through standard input.');
   process.stdin.setEncoding('utf8');

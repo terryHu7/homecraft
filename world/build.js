@@ -62,6 +62,22 @@ export function build({ grid }) {
     },
   };
   const cameraRay = new THREE.Ray(), cameraHit = new THREE.Vector3();
+  const roofView = new THREE.Raycaster(), roofHits = [];
+  function roofBlocksView(from, to) {
+    const direction = roofView.ray.direction.subVectors(to, from);
+    const length = direction.length();
+    if (length < 0.05) return false;
+    roofView.ray.origin.copy(from);
+    direction.divideScalar(length);
+    roofView.far = length - 0.04;
+    roofHits.length = 0;
+    // The backing panels give the roof outline without testing individual tiles.
+    for (const panel of shelterSurfaces) {
+      panel.raycast(roofView, roofHits);
+      if (roofHits.length) return true;
+    }
+    return false;
+  }
   const cameraCollision = {
     levels() {},
     viewBlock(from, direction, far) {
@@ -94,7 +110,7 @@ export function build({ grid }) {
   return {
     planes: [house, grounds, roof, ...cameraWalls, boat, lanterns.group, rainwater.group, pond], obstacles: collisions,
     hotspots, sites: [upperFloor, outer, modelSurfaces, cameraCollision], bakes: lanterns.bakes,
-    named: { modelRoofPicking: true, weatherModels: [house, roof, ...cameraWalls, grounds.getObjectByName('Cattle shed'), boat], doors, outer, updateGrazing, roofTopAt, rainwater, tvDisplay, mirror, studyLamp, photoFrames, libraryPaintingFrames, setLanternBrightness: lanterns.setBrightness },
+    named: { modelRoofPicking: true, weatherModels: [house, roof, ...cameraWalls, grounds.getObjectByName('Cattle shed'), boat], doors, outer, updateGrazing, roofTopAt, roofBlocksView, rainwater, tvDisplay, mirror, studyLamp, photoFrames, libraryPaintingFrames, setLanternBrightness: lanterns.setBrightness },
   };
 }
 

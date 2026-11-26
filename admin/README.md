@@ -5,10 +5,10 @@ Run `npm install` and copy `.env.example` to `.env` if needed. Set `MONGODB_URI`
 Seed the admin account from PowerShell 7. The command prompts for the initial password without displaying it. Use 12 or more characters and at most 72 UTF-8 bytes.
 
 ```powershell
-Read-Host -MaskInput 'Initial admin password' | npm run seed:office
+Read-Host -MaskInput 'Initial admin password' | npm run seed:office -- you@example.com
 ```
 
-The seed defaults to the configured owner's email. Pass a different email with `npm run seed:office -- your-email@example.com`. Seeding leaves an existing account's password intact. MongoDB stores bcrypt hashes in `users`, refresh sessions in `admin_sessions`, and published content in `office`.
+The email argument is required. Replace the example email with your own. Seeding leaves an existing account's password intact. MongoDB stores bcrypt hashes in `users`, refresh sessions in `admin_sessions`, and published content in `office`.
 
 Run `npm run serve:office` and open `http://127.0.0.1:8000/admin` or use the port reported by the Node server. Running `python tools/serve.py` also starts the Node server when MongoDB is configured and opens the world on a free port. Add `/admin` to that address. Existing local content in `.office-data/office.json` can still be read when no MongoDB URI is set.
 

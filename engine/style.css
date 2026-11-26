@@ -129,6 +129,19 @@ body.quiet #hud { opacity: 0; pointer-events: none; transition: opacity 1.6s eas
 #moodButton b { position: absolute; right: -4px; bottom: -6px; padding: 1px 3px; font: 600 11px/1 var(--text); color: #fff; background: rgba(12, 23, 20, .85); text-shadow: 1px 1px 0 #000; pointer-events: none; }
 #moodButton b:empty { display: none; }
 #moodButton[aria-expanded="true"] { background: var(--accent); }
+#cameraMenu {
+  position: fixed; inset: calc(max(16px, env(safe-area-inset-top)) + 58px) 16px auto auto;
+  margin: 0; width: min(200px, calc(100vw - 56px)); padding: 8px; color: var(--ink);
+  border: 8px solid transparent; border-image: var(--mc-frame) 4 fill / 8px;
+  background: transparent; font: 600 14px var(--text);
+}
+#cameraMenu select, #cameraMenu button {
+  min-height: 44px; width: 100%; border: 2px solid var(--line);
+  background: var(--btn); color: #fff; font: inherit;
+}
+#cameraMenu select { display: block; margin-top: 6px; padding: 0 4px; }
+#cameraMenu .camera-zoom { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+#cameraMenu .camera-zoom button { font-size: 22px; }
 #weatherMenu { position: fixed; right: 16px; top: calc(max(16px, env(safe-area-inset-top)) + 58px); z-index: 35; width: min(280px, calc(100vw - 32px)); max-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - 74px - env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; padding: 6px; color: var(--ink); border: 8px solid transparent; border-image: var(--mc-frame) 4 fill / 8px; }
 #weatherMenu h2 { margin: 0 0 8px; font: 600 14px var(--text); color: var(--ink-soft); }
 #weatherMenu h2:not(:first-child) { margin-top: 16px; }

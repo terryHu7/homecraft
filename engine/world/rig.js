@@ -33,6 +33,7 @@ export function createRig(camera, world) {
   let show = null;
   const look = new THREE.Vector3();
   let firstPerson = false, lookPitch = -0.12;
+  let closeView = false, lensGoal = 1;
   const EYE = 1.62;
   // Looking up from the pool's floor: how far the camera has gone into their
   // eyes (0 to 1), and where it looks from there.
@@ -57,15 +58,29 @@ export function createRig(camera, world) {
   }
   // Scrolling out of first person steps back behind the player.
   function zoom(f) {
+    if (L.houseCutaway && firstPerson) {
+      lensGoal = THREE.MathUtils.clamp(lensGoal / f, 1, 1.8);
+      return;
+    }
     if (firstPerson) { if (f > 1.03) setFirstPerson(false); return; }
-    distanceGoal = THREE.MathUtils.clamp(distanceGoal * f, 3.2, 34);
+    distanceGoal = THREE.MathUtils.clamp(distanceGoal * f, closeView ? 1.9 : 3.2, closeView ? 7 : 34);
   }
 
   // Entering first person looks where the player faces; leaving puts the camera behind them.
   function setFirstPerson(on, heading) {
     if (on && heading !== undefined) yaw = yawGoal = heading + Math.PI;
     if (on) lookPitch = -0.12;
+    if (on !== firstPerson) lensGoal = 1;
     firstPerson = on;
+  }
+
+  function setViewMode(mode, heading) {
+    setFirstPerson(mode === 'first', heading);
+    if (firstPerson) return;
+    closeView = mode === 'close';
+    pitchGoal = closeView ? 0.16 : HOME_VIEW[1];
+    distanceGoal = closeView ? 3.15 : HOME_VIEW[2];
+    reach = Infinity;
   }
 
   // The opening shot: the whole island from high up, then a swoop down behind
@@ -84,10 +99,12 @@ export function createRig(camera, world) {
   }
 
   function placeFollow(out) {
-    const cp = Math.cos(pitch);
+    const lift = L.houseCutaway && !closeView ? THREE.MathUtils.clamp((distance - HOME_VIEW[2]) * 0.018, 0, 0.35) : 0;
+    const angle = Math.min(pitch + lift, 1.38);
+    const cp = Math.cos(angle);
     out.set(
       focus.x + Math.sin(yaw) * cp * distance,
-      focus.y + Math.sin(pitch) * distance,
+      focus.y + Math.sin(angle) * distance,
       focus.z + Math.cos(yaw) * cp * distance,
     );
     return out;
@@ -120,6 +137,11 @@ export function createRig(camera, world) {
     yaw += (yawGoal - yaw) * k;
     pitch += (pitchGoal - pitch) * k;
     distance += (distanceGoal - distance) * k;
+    if (L.houseCutaway && camera.zoom !== lensGoal) {
+      const next = camera.zoom + (lensGoal - camera.zoom) * k;
+      camera.zoom = Math.abs(next - lensGoal) < 0.001 ? lensGoal : next;
+      camera.updateProjectionMatrix();
+    }
     placeFollow(followPos);
 
     if (show) {
@@ -164,12 +186,13 @@ export function createRig(camera, world) {
       cutaway(player, camera.position);
       return;
     } else {
-      cutaway(player, followPos);
+      if (!L.houseCutaway) cutaway(player, followPos);
       collide(dt, followPos);
       if (player.swimming || gazeT > 0) keepOffWater(followPos);
       camera.position.copy(followPos);
       camera.lookAt(focus);
       lookUp(dt, player);
+      if (L.houseCutaway) cutaway(player, camera.position);
       return;
     }
     cutaway(player, camera.position);
@@ -221,7 +244,10 @@ export function createRig(camera, world) {
     if (!HOUSE) return;
     const p = player.pos;
     if (L.houseCutaway) {
-      if (!firstPerson && !intro && L.houseCutaway(player, c, world)) return;
+      if (!firstPerson && !intro && L.houseCutaway(player, c, world)) {
+        world.setHidden('roof', world.roofBlocksView(focus, c));
+        return;
+      }
       for (const group of ['roof', 'wallS', 'wallN', 'wallE', 'wallW']) world.setHidden(group, false);
       return;
     }
@@ -244,7 +270,7 @@ export function createRig(camera, world) {
   }
 
   return {
-    update, orbit, zoom, startIntro, skipIntro, setFirstPerson, showcase,
+    update, orbit, zoom, startIntro, skipIntro, setFirstPerson, setViewMode, showcase,
     recenter(player, faceStation = false) {
       intro = null; gazeT = 0; lying = false;
       focus.set(player.pos.x, player.y + 1.25, player.pos.z);
@@ -255,6 +281,7 @@ export function createRig(camera, world) {
     },
     get yaw() { return yaw; },
     get firstPerson() { return firstPerson; },
+    get viewMode() { return firstPerson ? 'first' : closeView ? 'close' : 'follow'; },
     // Looking up through the player's eyes from the pool's floor (wholly or easing in).
     get gazing() { return gazeT > 0; }, get gazeAmount() { return gazeT; },
     get introActive() { return !!intro; },

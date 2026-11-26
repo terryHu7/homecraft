@@ -31,7 +31,7 @@ Open the localhost URL printed by the launcher. With no MongoDB configuration, t
    node -p "require('node:crypto').randomBytes(32).toString('hex')"
    ```
 
-4. Seed an admin account. In PowerShell 7, replace the example email with your own and enter a new password when prompted.
+4. Seed an admin account. The email argument is required. In PowerShell 7, replace the example email with your own and enter a new password when prompted.
 
    ```powershell
    Read-Host -MaskInput 'Initial admin password' | npm run seed:office -- you@example.com

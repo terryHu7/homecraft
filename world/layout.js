@@ -60,7 +60,6 @@ export function houseCutaway(player, camera, world) {
   if (player.y > FIRST_FLOOR.y + 1 && player.y >= world.roofTopAt(x, z) - 0.05) return;
   const back = (upper ? FIRST_FLOOR.z0 + 0.05 : -8.25 - REAR_EXTENSION) * HOUSE_SCALE;
   const side = 10.9 * HOUSE_SCALE;
-  world.setHidden('roof', true);
   world.setHidden('wallS', camera.z > Math.max(z, front));
   world.setHidden('wallN', camera.z < Math.min(z, back));
   world.setHidden('wallE', camera.x > Math.max(x, side));

@@ -696,12 +696,48 @@ async function boot() {
   // ---------- First person ----------
   const viewButton = $('#viewButton'), crosshair = $('#crosshair');
   viewButton.querySelector('span').style.backgroundImage = `url(${icon('eye').url})`;
+  let cameraMode;
   function toggleView() {
     rig.skipIntro();
     rig.setFirstPerson(!rig.firstPerson, player.heading);
+    if (cameraMode) cameraMode.value = rig.viewMode;
     sound.play('click');
   }
-  viewButton.addEventListener('click', toggleView);
+  if (L.houseCutaway) {
+    const menu = document.createElement('div');
+    menu.id = 'cameraMenu';
+    menu.setAttribute('popover', 'auto');
+    menu.innerHTML = `
+      <label>Camera view
+        <select>
+          <option value="follow">Third person</option>
+          <option value="close">Close third person</option>
+          <option value="first">First person</option>
+        </select>
+      </label>
+      <div class="camera-zoom">
+        <button type="button" aria-label="Zoom out" data-zoom-factor="1.25">−</button>
+        <button type="button" aria-label="Zoom in" data-zoom-factor="0.8">+</button>
+      </div>`;
+    viewButton.closest('#hud').append(menu);
+    viewButton.setAttribute('aria-label', 'Camera controls');
+    viewButton.removeAttribute('data-en-label');
+    viewButton.setAttribute('popovertarget', menu.id);
+    cameraMode = menu.querySelector('select');
+    menu.addEventListener('toggle', () => { cameraMode.value = rig.viewMode; });
+    cameraMode.addEventListener('change', () => {
+      rig.skipIntro();
+      rig.setViewMode(cameraMode.value, player.heading);
+      sound.play('click');
+    });
+    for (const button of menu.querySelectorAll('[data-zoom-factor]')) {
+      button.addEventListener('click', () => {
+        rig.skipIntro();
+        rig.zoom(Number(button.dataset.zoomFactor));
+        sound.play('click');
+      });
+    }
+  } else viewButton.addEventListener('click', toggleView);
 
   // ---------- Photo studio ----------
   const photoButton = $('#photoButton');
