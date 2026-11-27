@@ -7,6 +7,9 @@ import { buildLanterns, controlLanterns } from './lanterns.js';
 import { createModelSurfaces, applyModelWeather } from './model-weather.js';
 import { setupBilliards } from '../assets/billiards.js';
 import { getOffice } from '../assets/office-content.js';
+import { createSwargGates, createSwargRealmSite } from './swarg-gate.js';
+import { createSwargRealm } from './swarg-realm.js';
+import { createSwargSound } from './swarg-sound.js';
 
 export function build({ grid }) {
   buildIsland(grid, ISLAND, {
@@ -107,14 +110,16 @@ export function build({ grid }) {
     },
     spots: () => [{ x: 0, z: JETTY.z1 - 1 }],
   };
+  const swargGates = createSwargGates();
+  const swargSite = createSwargRealmSite();
   return {
-    planes: [house, grounds, roof, ...cameraWalls, boat, lanterns.group, rainwater.group, pond], obstacles: collisions,
-    hotspots, sites: [upperFloor, outer, modelSurfaces, cameraCollision], bakes: lanterns.bakes,
-    named: { modelRoofPicking: true, weatherModels: [house, roof, ...cameraWalls, grounds.getObjectByName('Cattle shed'), boat], doors, outer, updateGrazing, roofTopAt, roofBlocksView, rainwater, tvDisplay, mirror, studyLamp, photoFrames, libraryPaintingFrames, setLanternBrightness: lanterns.setBrightness },
+    planes: [house, grounds, roof, ...cameraWalls, boat, lanterns.group, rainwater.group, pond, ...swargGates.planes], obstacles: collisions,
+    hotspots, sites: [upperFloor, outer, modelSurfaces, cameraCollision, swargGates.site, swargSite], bakes: lanterns.bakes,
+    named: { modelRoofPicking: true, weatherModels: [house, roof, ...cameraWalls, grounds.getObjectByName('Cattle shed'), boat], doors, outer, updateGrazing, roofTopAt, roofBlocksView, rainwater, tvDisplay, mirror, studyLamp, photoFrames, libraryPaintingFrames, setLanternBrightness: lanterns.setBrightness, swargGates, swargSite },
   };
 }
 
-export function setup({ stage, world, nav, player, rig, weatherFx }) {
+export function setup({ stage, world, nav, player, rig, weatherFx, sound, config }) {
   applyModelWeather(world.weatherModels, world.materials.uniforms);
   const updateLanterns = controlLanterns(stage, world);
   const updateMirror = createMirrorView(stage, world.mirror);
@@ -124,6 +129,10 @@ export function setup({ stage, world, nav, player, rig, weatherFx }) {
   let previousView = null;
   const doors = new Map(world.doors.map(door => [door.id, door]));
   const billiards = setupBilliards();
+  const swarg = createSwargRealm({ stage, world, player, rig });
+  const swargSound = createSwargSound({ sound });
+  window.addEventListener('pointerdown', swargSound.gesture, { once: true });
+  window.addEventListener('keydown', swargSound.gesture, { once: true });
   const interactionTargets = world.doors.map(({ id, at, floor }) => ({
     id, at, floor, name: 'Door', en: 'Door', icon: 'portal', range: 1.45,
   }));
@@ -132,6 +141,7 @@ export function setup({ stage, world, nav, player, rig, weatherFx }) {
     at: [BILLIARDS.x * HOUSE_SCALE, BILLIARDS.z * HOUSE_SCALE],
     floor: 0.46, range: 1.8,
   });
+  interactionTargets.push(...world.swargGates.targets);
   const seats = { oonjal: OONJAL, sofa: SOFA };
   BALCONY_SEATS.forEach((seat, index) => {
     const id = 'balcony-chair-' + index;
@@ -156,8 +166,9 @@ export function setup({ stage, world, nav, player, rig, weatherFx }) {
   return {
     interactionTargets,
     get officeOpen() { return !!officeMonitor?.open || !!billiards?.open; },
-    handlesInteraction: id => id === 'skills' || Object.hasOwn(seats, id),
+    handlesInteraction: id => id === 'skills' || Object.hasOwn(seats, id) || id.startsWith('swarg-'),
     interact(id) {
+      if (id.startsWith('swarg-')) { swargSound.gesture(); swargSound.transition(); swarg.requestTransition(id === 'swarg-return' ? 'earth' : 'realm'); return true; }
       if (id === 'billiards') { billiards?.showModal(); return true; }
       const door = doors.get(id);
       if (door) {
@@ -210,7 +221,10 @@ export function setup({ stage, world, nav, player, rig, weatherFx }) {
       display.material.needsUpdate = true;
       display.visible = !!map;
     },
-    update(dt, elapsed) {
+    update(dt, elapsed, now) {
+      swarg.update(dt, elapsed, now);
+      swargSound.update(dt, player, swarg.active);
+      if (!swarg.transitioning && swarg.shouldEnter(player)) { swargSound.gesture(); swargSound.transition(); swarg.requestTransition(swarg.active ? 'earth' : 'realm'); }
       world.updateGrazing(elapsed);
       for (const door of doors.values()) for (const { hinge, openAngle } of door.leaves) {
         const target = door.open ? openAngle : 0;
