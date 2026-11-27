@@ -113,7 +113,7 @@ export function createInput(canvas, handlers) {
   canvas.addEventListener('pointercancel', end);
   canvas.addEventListener('lostpointercapture', end);
   canvas.addEventListener('pointerleave', () => handlers.hover?.(-1, -1));
-  canvas.addEventListener('wheel', e => { e.preventDefault(); if (!blocked()) handlers.zoom?.(Math.exp(e.deltaY * 0.0012)); }, { passive: false });
+  canvas.addEventListener('wheel', e => { e.preventDefault(); if (!blocked()) handlers.zoom?.(Math.exp(Math.max(-240, Math.min(240, e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? canvas.clientHeight : 1))) * 0.0012)); }, { passive: false });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
 
   function read() {

@@ -103,11 +103,9 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     context.restore();
   }
   function radarTargetPoint(target, p, W, H, scale) {
-    // The radar follows the avatar's heading: straight ahead is always at the top.
-    const bearing = Math.atan2(target.x - p.x, target.z - p.z) - p.heading;
-    const distance = Math.hypot(target.x - p.x, target.z - p.z);
-    const radius = Math.min(W, H) / 2 - 42 * dpr;
-    const rawX = Math.sin(bearing) * distance * scale, rawY = -Math.cos(bearing) * distance * scale;
+    const dx=(target.x-p.x)*scale, dz=(target.z-p.z)*scale, yaw=getYaw();
+    const rawX=dx*Math.cos(yaw)-dz*Math.sin(yaw), rawY=dx*Math.sin(yaw)+dz*Math.cos(yaw);
+    const radius=Math.min(W,H)/2-42*dpr;
     const length = Math.hypot(rawX, rawY), k = length > radius ? radius / length : 1;
     return { x: W / 2 + rawX * k, y: H / 2 + rawY * k, clipped: length > radius, distance: navDistance(target, p) };
   }
@@ -153,7 +151,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     }
     const sx = (e.clientX - r.left - r.width / 2), sy = (e.clientY - r.top - r.height / 2);
     const scale = zooms[zoomIndex] * (r.width / 204);
-    const a = -(p.heading + Math.PI);
+    const a = -getYaw();
     const dx = sx * Math.cos(a) - sy * Math.sin(a), dz = sx * Math.sin(a) + sy * Math.cos(a);
     onPick(p.x + dx / scale, p.z + dz / scale);
   });
@@ -170,26 +168,18 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     const W = canvas.width, H = canvas.height;
     if (!W) return;
     const p = getPlayer();
-    const targets = navigationTargets(), swargaMap = targets.some(target => target.world === 'swarga');
+    const targets = navigationTargets();
     const scale = zooms[zoomIndex] * (W / 204);
-    const yaw = p.heading + Math.PI;
+    const yaw = getYaw();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = swargaMap ? '#17243a' : '#9fc6e8';
+    ctx.fillStyle = '#9fc6e8';
     ctx.fillRect(0, 0, W, H);
     ctx.save();
     ctx.translate(W / 2, H / 2);
     ctx.rotate(yaw);
     ctx.imageSmoothingEnabled = false;
-    if (swargaMap) {
-      ctx.fillStyle = '#b9ad8d'; ctx.fillRect((-18 - p.x) * scale, (-12.5 - p.z) * scale, 36 * scale, 25 * scale);
-      ctx.fillStyle = '#17243a'; ctx.fillRect((-4 - p.x) * scale, (-4.5 - p.z) * scale, 22 * scale, 9 * scale);
-      ctx.strokeStyle = '#e5d8b5'; ctx.lineWidth = 2 * dpr;
-      ctx.strokeRect((-18 - p.x) * scale, (-12.5 - p.z) * scale, 36 * scale, 25 * scale);
-      ctx.fillStyle = '#cbbd9b'; ctx.fillRect((-13 - p.x) * scale, (-25 - p.z) * scale, 26 * scale, 18 * scale);
-    } else {
-      const k = scale / PPM;
-      ctx.drawImage(mapImage, (ISLAND.x0 - p.x) * scale, (ISLAND.z0 - p.z) * scale, mapImage.width * k, mapImage.height * k);
-    }
+    const k = scale / PPM;
+    ctx.drawImage(mapImage, (ISLAND.x0 - p.x) * scale, (ISLAND.z0 - p.z) * scale, mapImage.width * k, mapImage.height * k);
     // Route to the waypoint.
     const route = getRoute();
     if (route && route.length) {
@@ -249,11 +239,10 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       const mapWidth = width * Math.abs(mapCos) + depth * Math.abs(mapSin);
       const mapHeight = width * Math.abs(mapSin) + depth * Math.abs(mapCos);
       const fitScale = Math.min(big.width / mapWidth, big.height / mapHeight) * 0.94;
-      const targetRealm = navigationTargets().some(target => target.world === 'swarga');
       const current = getPlayer();
       const outsideMap = current.x < ISLAND.x0 || current.x > ISLAND.x1 || current.z < ISLAND.z0 || current.z > ISLAND.z1;
-      view = { cx: targetRealm || outsideMap ? current.x : (ISLAND.x0 + ISLAND.x1) / 2,
-        cz: targetRealm || outsideMap ? current.z : (ISLAND.z0 + ISLAND.z1) / 2,
+      view = { cx: outsideMap ? current.x : (ISLAND.x0 + ISLAND.x1) / 2,
+        cz: outsideMap ? current.z : (ISLAND.z0 + ISLAND.z1) / 2,
         scale: fitScale, min: fitScale * 0.9, max: fitScale * 4 };
       drawBig();
     }
@@ -326,28 +315,20 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     if (bigRoot.hidden || !view) return;
     const W = big.width, H = big.height, s = view.scale;
     bctx.setTransform(1, 0, 0, 1, 0, 0);
-    const targets = navigationTargets(), swargaMap = targets.some(target => target.world === 'swarga');
-    bctx.fillStyle = swargaMap ? '#17243a' : '#9fc6e8';
+    const targets = navigationTargets();
+    bctx.fillStyle = '#9fc6e8';
     bctx.fillRect(0, 0, W, H);
     bctx.imageSmoothingEnabled = false;
-    if (!swargaMap) {
-      bctx.save();
-      bctx.translate(W / 2, H / 2);
-      bctx.rotate(mapRotation);
-      bctx.drawImage(mapImage, (ISLAND.x0 - view.cx) * s, (ISLAND.z0 - view.cz) * s,
-        mapImage.width * s / PPM, mapImage.height * s / PPM);
-      bctx.restore();
-    }
+    bctx.save();
+    bctx.translate(W / 2, H / 2);
+    bctx.rotate(mapRotation);
+    bctx.drawImage(mapImage, (ISLAND.x0 - view.cx) * s, (ISLAND.z0 - view.cz) * s,
+      mapImage.width * s / PPM, mapImage.height * s / PPM);
+    bctx.restore();
     const P = (x, z) => {
       const dx = (x - view.cx) * s, dz = (z - view.cz) * s;
       return [W / 2 + dx * mapCos - dz * mapSin, H / 2 + dx * mapSin + dz * mapCos];
     };
-    if (swargaMap) {
-      drawWorldRect(bctx, P, -18, -12.5, 18, 12.5, '#b9ad8d', '#e5d8b5');
-      drawWorldRect(bctx, P, -4, -4.5, 18, 4.5, '#17243a');
-      drawWorldRect(bctx, P, -13, -25, 13, -7, '#cbbd9b', '#e5d8b5');
-      drawWorldRect(bctx, P, 11, -4, 18, 4, '#c9a85d', '#f4d887');
-    }
     bctx.font = `600 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif`;
     bctx.textAlign = 'left'; bctx.textBaseline = 'middle';
     for (const { s: st, img } of blips) {

@@ -1,3 +1,5 @@
+import { createSwargGates } from '../swarg-gate.js';
+import { setupGateTravel } from '../swarg-travel.js';
 import { buildDining, setupDining } from './divine-dining.js';
 import * as THREE from 'three';
 import { BoxBatch } from '@engine/world/blocks.js';
@@ -229,12 +231,13 @@ export function build({ grid, layer }) {
     box: new THREE.Box3(new THREE.Vector3(x - 0.85, floor + 0.06, z - 0.55),
       new THREE.Vector3(x + 0.85, floor + 2.6, z + 0.55)),
   }));
-  return { batches, obstacles, planes: [domes, hallDomes], bakes, hotspots };
+  const swargGates=createSwargGates(true);
+  return { named:{swargGates},sites:[swargGates.site], batches, obstacles, planes: [domes, hallDomes,swargGates.root], bakes, hotspots };
 }
 
 // The shared engine creates sea meshes for every world. Detach them before
 // the first render, and opt the voxel shell out of the sun's shadow pass.
-export function setup({ stage, world, player, rig, nav }) {
+export function setup({ stage, world, player, rig, nav, sound }) {
   stage.scene.remove(world.coast.sea, stage.scene.getObjectByName('open-sea'));
   for (const group of Object.values(world.groups)) {
     group.traverse(object => { if (object.isMesh) object.castShadow = false; });
@@ -255,8 +258,11 @@ export function setup({ stage, world, player, rig, nav }) {
   const updateWildlife = setupNandanaAnimals({ stage, world });
   const updateClouds = setupNandanaClouds(stage, world.groups.nandanaClouds);
   const updateDining = setupDining({ stage, world, nav });
+  const travel=setupGateTravel({stage, world, player, rig, sound},true);
   return {
-    update(dt) {
+    ...travel,
+    update(dt,elapsed) {
+      travel.update(dt,elapsed);
       updateAiravata(dt);
       updateDance(dt);
       updateDining(dt);

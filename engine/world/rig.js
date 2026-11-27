@@ -54,7 +54,7 @@ export function createRig(camera, world) {
       return;
     }
     yawGoal -= dx * 0.0052;
-    pitchGoal = THREE.MathUtils.clamp(pitchGoal + dy * 0.0042, 0.06, 1.38);
+    pitchGoal = THREE.MathUtils.clamp(pitchGoal + dy * 0.0042, -1.05, 1.38);
   }
   // Scrolling out of first person steps back behind the player.
   function zoom(f) {
@@ -102,10 +102,12 @@ export function createRig(camera, world) {
     const lift = L.houseCutaway && !closeView ? THREE.MathUtils.clamp((distance - HOME_VIEW[2]) * 0.018, 0, 0.35) : 0;
     const angle = Math.min(pitch + lift, 1.38);
     const cp = Math.cos(angle);
+    // Shorten a downward orbit at the ground so the chosen upward sightline survives.
+    const radius = angle < 0 ? Math.min(distance, Math.max(.2, focus.y - .22) / -Math.sin(angle)) : distance;
     out.set(
-      focus.x + Math.sin(yaw) * cp * distance,
-      focus.y + Math.sin(angle) * distance,
-      focus.z + Math.cos(yaw) * cp * distance,
+      focus.x + Math.sin(yaw) * cp * radius,
+      Math.max(.22, focus.y + Math.sin(angle) * radius),
+      focus.z + Math.cos(yaw) * cp * radius,
     );
     return out;
   }

@@ -59,6 +59,7 @@ export const STATIONS = [
   station('lotus-pavilion', 'Lotus Pavilion', 'blog', [20, 47.5], [20, 50], 0, 'The lotus-roofed pavilion looks across the lake.'),
   station('garden-mandapam', 'Golden Garden Mandapam', 'portal', [-31, 50], [-31, 53], 0, 'An open pavilion with gilded columns, arches, and marble seating.'),
   station('viewing-pavilion', 'Celestial Viewing Pavilion', 'eye', [27, 85.2], [27, 87.7], 1.7, 'An elevated terrace offers a view of the garden and the palace beyond.'),
+  {...station('return-gate','Return to Earth','portal',[0,25.8],[0,29],3,'Return to the house.'), page:false},
 ];
 
 export const AIRAVATA_TUSKS = 4; // TODO(aswin): Confirm whether to keep four tusks.

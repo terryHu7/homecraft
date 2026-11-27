@@ -694,6 +694,7 @@ async function boot() {
     getNavigationTargets: () => extras.navigationTargets?.() ?? [],
     onNavigationTarget: target => {
       const accepted = navigate(target.x, target.z, target.y);
+      if (accepted) extras.onNavigationTarget?.(target);
       marker.show(target.x, target.y, target.z, accepted ? 0xf0bd4e : 0xeab66a);
       return accepted;
     },

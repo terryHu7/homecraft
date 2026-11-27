@@ -1,3 +1,4 @@
+import { SWARG_EARTH } from './swarg-gate.js';
 export function createSwargSound({ sound }) {
   let context = null, master = null, drone = null, droneGain = null, lastBell = 0;
   let realmMode = false, lastPhrase = 0;
@@ -34,6 +35,14 @@ export function createSwargSound({ sound }) {
   function transition() {
     gesture(); if (!context || !sound.on) return;
     const t = context.currentTime;
+    const noise=context.createBuffer(1,context.sampleRate*2,context.sampleRate);
+    const samples=noise.getChannelData(0);
+    for(let i=0;i<samples.length;i++)samples[i]=Math.random()*2-1;
+    const wind=context.createBufferSource(), air=context.createBiquadFilter(), swell=context.createGain();
+    wind.buffer=noise;air.type='bandpass';air.frequency.setValueAtTime(340,t);air.frequency.exponentialRampToValueAtTime(1300,t+1.8);
+    swell.gain.setValueAtTime(.001,t);swell.gain.exponentialRampToValueAtTime(.2,t+.9);swell.gain.exponentialRampToValueAtTime(.001,t+2);
+    wind.connect(air);air.connect(swell);swell.connect(master);wind.start();
+    wind.onended=()=>{wind.disconnect();air.disconnect();swell.disconnect();};
     tone(130.81, 1.7, 0.22, 'sawtooth');
     tone(196, 1.9, 0.12, 'sine');
     const osc = context.createOscillator(), g = context.createGain(); osc.type = 'sine';
@@ -52,7 +61,7 @@ export function createSwargSound({ sound }) {
     if (!context) return;
     if (context.state === 'suspended') context.resume();
     master.gain.setTargetAtTime(0.32, context.currentTime, 0.12);
-    const d = Math.hypot(player.pos.x + 120, player.pos.z - 150, player.floorY - 165);
+    const d = Math.hypot(player.pos.x - SWARG_EARTH.x, player.pos.z - SWARG_EARTH.z, player.y - SWARG_EARTH.y);
     const earthLevel = Math.max(0, 1 - d / 60);
     const target = inRealm ? 0.045 : earthLevel * 0.19;
     droneGain.gain.setTargetAtTime(target, context.currentTime, 0.7);

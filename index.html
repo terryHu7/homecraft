@@ -14,8 +14,20 @@
 <link rel="icon" href="assets/aswin-world.svg">
 <link rel="stylesheet" href="engine/style.css">
 <link rel="stylesheet" href="assets/portfolio.css">
+<style>#hud{transition:opacity .7s}.gate-flight #hud{opacity:0;pointer-events:none}body::after{content:"";position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 #15110f,inset 0 0 #15110f;transition:box-shadow .8s;z-index:1000}.gate-flight body::after{box-shadow:inset 0 6vh #15110f,inset 0 -6vh #15110f}html::after{content:"";position:fixed;inset:0;z-index:20000;pointer-events:none;opacity:0;background:radial-gradient(ellipse,#fffdf4,#ffedbf);transition:opacity .4s}html.gate-light::after{opacity:1;pointer-events:auto}html.gate-arrival::after{transition-duration:1.4s}.gate-arrival #loading{visibility:hidden}</style>
 <script>
 const swargaPreview = new URLSearchParams(location.search).get('world') === 'swarga';
+const arrivalURL = new URL(location.href);
+if (arrivalURL.searchParams.has('arrive')) {
+  document.documentElement.classList.add('gate-light','gate-arrival');
+  arrivalURL.searchParams.delete('arrive');
+  history.replaceState(history.state,'',arrivalURL);
+  function reveal() {
+    if (!window.__home && !window.__homeStartupError) return requestAnimationFrame(reveal);
+    setTimeout(()=>document.documentElement.classList.remove('gate-light'),500);
+  }
+  requestAnimationFrame(reveal);
+}
 const worldImports = document.createElement('script');
 worldImports.type = 'importmap';
 worldImports.textContent = JSON.stringify({ imports: {
