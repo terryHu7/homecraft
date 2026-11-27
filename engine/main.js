@@ -654,7 +654,7 @@ async function boot() {
     const onFoot = !player.flying && (isle ? isle.site === player.island && Math.abs(isle.y - player.y) < 1.5 : !player.island);
     if (!onFoot) {
       const accepted = player.flyTo(x, z);
-      marker.show(x, isle ? isle.y : nav.heightAt(x, z), z, accepted ? 0x85c9ff : 0xeab66a);
+      marker.show(x, targetY ?? (isle ? isle.y : nav.heightAt(x, z)), z, accepted ? 0x85c9ff : 0xeab66a);
       return accepted;
     }
     if (isle) {
@@ -687,10 +687,16 @@ async function boot() {
   // ---------- Radar ----------
   const minimap = createMinimap({
     root: $('#minimap'), bigRoot: $('#bigmap'), grid: world.grid, obstacles: world.obstacles, decorate: world.drawMap,
-    getPlayer: () => ({ x: player.pos.x, z: player.pos.z, heading: player.heading }),
+    getPlayer: () => ({ x: player.pos.x, y: player.y, z: player.pos.z, heading: player.heading }),
     getYaw: () => rig.yaw,
     getRoute: () => player.path,
     onPick: navigate,
+    getNavigationTargets: () => extras.navigationTargets?.() ?? [],
+    onNavigationTarget: target => {
+      const accepted = navigate(target.x, target.z, target.y);
+      marker.show(target.x, target.y, target.z, accepted ? 0xf0bd4e : 0xeab66a);
+      return accepted;
+    },
   });
 
   // ---------- First person ----------

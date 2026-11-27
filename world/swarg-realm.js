@@ -30,8 +30,12 @@ function makeRealm() {
   group.position.set(SWARG_REALM.x, SWARG_REALM.y, SWARG_REALM.z);
   const bags = Object.fromEntries(Object.keys(materials).map(key => [key, []]));
   // Arrival court and Sudharma Sabha: a symbolic, open-sided assembly hall.
-  addBox(bags, 'marble', 0, -0.55, 0, 36, 0.55, 25);
-  addBox(bags, 'marble', 24, -0.32, 0, 16, 0.32, 6);
+  // Split court slabs leave an open stair channel from the arrival pad to the gate.
+  addBox(bags, 'marble', -11, -0.55, 0, 14, 0.55, 25);
+  addBox(bags, 'marble', 11, -0.55, 0, 14, 0.55, 25);
+  addBox(bags, 'marble', 7, -0.55, -8.5, 22, 0.55, 8);
+  addBox(bags, 'marble', 7, -0.55, 8.5, 22, 0.55, 8);
+  addBox(bags, 'marble', -2.8, -7.8, 0, 3, 0.3, 8);
   addBox(bags, 'marble', 0, 0, -13, 27, 0.35, 12);
   addBox(bags, 'gold', 0, 0.34, -18.8, 26, 0.22, 0.4);
   for (const x of [-11, -5.5, 0, 5.5, 11]) {
@@ -53,11 +57,11 @@ function makeRealm() {
     }
   }
   // Airavata, a dignified white elephant statue made from merged simple forms.
-  addSphere(bags, 'marble', 4.2, 1.65, 1.5, 2.0, 1.25, 1.05, 12);
-  addSphere(bags, 'marble', 5.8, 2.7, 1.35, 0.9, 0.92, 0.88, 12);
-  for (const x of [3.0, 5.0]) for (const z of [0.9, 2.1]) addBox(bags, 'marble', x, 0.1, z, 0.52, 1.2, 0.55);
-  addSphere(bags, 'marble', 6.62, 1.95, 1.0, 0.35, 1.2, 0.3, 10); // symbolic trunk
-  for (const x of [5.45, 6.15]) addSphere(bags, 'gold', x, 3.05, 0.65, 0.12, 0.12, 0.08, 8);
+  addSphere(bags, 'marble', -11.8, 1.65, 1.5, 2.0, 1.25, 1.05, 12);
+  addSphere(bags, 'marble', -10.2, 2.7, 1.35, 0.9, 0.92, 0.88, 12);
+  for (const x of [-13.0, -11.0]) for (const z of [0.9, 2.1]) addBox(bags, 'marble', x, 0.1, z, 0.52, 1.2, 0.55);
+  addSphere(bags, 'marble', -9.38, 1.95, 1.0, 0.35, 1.2, 0.3, 10); // symbolic trunk
+  for (const x of [-10.55, -9.85]) addSphere(bags, 'gold', x, 3.05, 0.65, 0.12, 0.12, 0.08, 8);
   // Mandakini ribbon: several joined translucent planes with a gentle animated shimmer.
   const riverMat = materials.river;
   const river = new THREE.Mesh(new THREE.PlaneGeometry(52, 4.4, 1, 1), riverMat);
@@ -109,16 +113,17 @@ export function createSwargRealm({ stage, world, player, rig }) {
   function swap(destination) {
     player.cancel();
     if (destination === 'realm') {
-      build(); realm.group.visible = true; active = true;
+      build(); realm.group.visible = true; world.swargSite.enabled = true; active = true;
       const [x, z] = world.swargGates.realm.arrival;
-      player.teleport(x, z, { floor: 600, look: [38, 0] });
+      player.teleport(x, z, { floor: world.swargGates.realm.arrivalY, look: [world.swargGates.realm.position.x, world.swargGates.realm.position.z] });
     } else {
       if (realm) realm.group.visible = false;
       active = false;
       const [x, z] = world.swargGates.earth.arrival;
-      player.teleport(x, z, { floor: SWARG_EARTH.y, look: [x, z + 8] });
+      player.teleport(x, z, { floor: SWARG_EARTH.y, look: [0, 19] });
+      world.swargSite.enabled = false;
     }
-    rig.recenter(player);
+    rig.recenter(player, true);
   }
   function shouldEnter(p) {
     const gate = active ? world.swargGates.realm : world.swargGates.earth;

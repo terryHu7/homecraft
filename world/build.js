@@ -165,6 +165,12 @@ export function setup({ stage, world, nav, player, rig, weatherFx, sound, config
   });
   return {
     interactionTargets,
+    navigationTargets() {
+      const id = swarg.active ? 'swarg-return' : 'swarg-enter';
+      const target = world.swargGates.targets.find(item => item.id === id);
+      return target ? [{ id: swarg.active ? 'earth' : 'swarga', world: swarg.active ? 'swarga' : 'earth', label: swarg.active ? 'EARTH' : 'SWARGA',
+        x: target.at[0], z: target.at[1], y: target.floor, color: '#e4b244' }] : [];
+    },
     get officeOpen() { return !!officeMonitor?.open || !!billiards?.open; },
     handlesInteraction: id => id === 'skills' || Object.hasOwn(seats, id) || id.startsWith('swarg-'),
     interact(id) {
