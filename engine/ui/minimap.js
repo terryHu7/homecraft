@@ -76,15 +76,35 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
   const navigationTargets = () => getNavigationTargets?.() || [];
   const navDistance = (target, p) => Math.hypot(target.x - p.x, target.z - p.z, (target.y ?? p.y ?? 0) - (p.y ?? 0));
   const distanceLabel = distance => distance >= 1000 ? `${(distance / 1000).toFixed(1)} km` : `${Math.round(distance)} m`;
+  const labelFont = size => `700 ${Math.max(9, size * 1.12)}px system-ui, sans-serif`;
+  // Text measurement is slow, so remember widths until the label text changes.
+  const labelWidths = new Map();
+  function labelWidth(context, font, label) {
+    const key = `${font}|${label}`;
+    let width = labelWidths.get(key);
+    if (width === undefined) {
+      if (labelWidths.size > 200) labelWidths.clear();
+      context.save();
+      context.font = font;
+      width = context.measureText(label).width;
+      context.restore();
+      labelWidths.set(key, width);
+    }
+    return width;
+  }
   function navigationLabelBounds(context, x, y, target, distance, size) {
     const label = `${target.label} · ${distanceLabel(distance)}`;
-    context.save(); context.font = `700 ${Math.max(9, size * 1.12)}px system-ui, sans-serif`;
-    const pad = size * 0.55, textWidth = context.measureText(label).width, w = textWidth + pad * 2, h = size * 2.35;
+    const pad = size * 0.55;
+    const w = labelWidth(context, labelFont(size), label) + pad * 2, h = size * 2.35;
     const W = context.canvas.width, H = context.canvas.height;
     const lx = Math.max(2, Math.min(W - w - 2, x - w / 2));
     const ly = Math.max(2, Math.min(H - h - 2, y + size * 1.15));
-    context.restore();
     return { label, x: lx, y: ly, w, h };
+  }
+  // True when (x, y) is on the target's marker or on its label.
+  function hitsNavigationTarget(point, label, x, y, radius) {
+    const onLabel = x >= label.x && x <= label.x + label.w && y >= label.y && y <= label.y + label.h;
+    return onLabel || Math.hypot(point.x - x, point.y - y) <= radius;
   }
   function drawNavigationMarker(context, x, y, centerX, centerY, target, distance, size) {
     const angle = Math.atan2(y - centerY, x - centerX);
@@ -96,26 +116,18 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     context.fillStyle = target.color || '#e4b244'; context.strokeStyle = '#30220b'; context.lineWidth = Math.max(1, size * 0.24); context.fill(); context.stroke();
     context.restore();
     const bounds = navigationLabelBounds(context, x, y, target, distance, size);
-    context.save(); context.font = `700 ${Math.max(9, size * 1.12)}px system-ui, sans-serif`;
+    context.save(); context.font = labelFont(size);
     context.fillStyle = 'rgba(30, 25, 17, .88)'; context.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
     context.fillStyle = '#fff2c4'; context.textAlign = 'center'; context.textBaseline = 'middle';
     context.fillText(bounds.label, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
     context.restore();
   }
   function radarTargetPoint(target, p, W, H, scale) {
-    const dx=(target.x-p.x)*scale, dz=(target.z-p.z)*scale, yaw=getYaw();
-    const rawX=dx*Math.cos(yaw)-dz*Math.sin(yaw), rawY=dx*Math.sin(yaw)+dz*Math.cos(yaw);
-    const radius=Math.min(W,H)/2-42*dpr;
+    const dx = (target.x - p.x) * scale, dz = (target.z - p.z) * scale, yaw = getYaw();
+    const rawX = dx * Math.cos(yaw) - dz * Math.sin(yaw), rawY = dx * Math.sin(yaw) + dz * Math.cos(yaw);
+    const radius = Math.min(W, H) / 2 - 42 * dpr;
     const length = Math.hypot(rawX, rawY), k = length > radius ? radius / length : 1;
     return { x: W / 2 + rawX * k, y: H / 2 + rawY * k, clipped: length > radius, distance: navDistance(target, p) };
-  }
-  function drawWorldRect(context, project, x0, z0, x1, z1, fill, stroke = null) {
-    const corners = [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].map(([x, z]) => project(x, z));
-    context.beginPath(); context.moveTo(...corners[0]);
-    for (let i = 1; i < corners.length; i++) context.lineTo(...corners[i]);
-    context.closePath();
-    if (fill) { context.fillStyle = fill; context.fill(); }
-    if (stroke) { context.strokeStyle = stroke; context.lineWidth = 2 * dpr; context.stroke(); }
   }
 
   function fit() {
@@ -146,8 +158,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     for (const target of navigationTargets()) {
       const point = radarTargetPoint(target, p, W, H, physicalScale);
       const label = navigationLabelBounds(ctx, point.x, point.y, target, point.distance, 8 * dpr);
-      const onLabel = cx >= label.x && cx <= label.x + label.w && cy >= label.y && cy <= label.y + label.h;
-      if (onLabel || Math.hypot(cx - point.x, cy - point.y) <= 18 * dpr) { onNavigationTarget(target); return; }
+      if (hitsNavigationTarget(point, label, cx, cy, 18 * dpr)) { onNavigationTarget(target); return; }
     }
     const sx = (e.clientX - r.left - r.width / 2), sy = (e.clientY - r.top - r.height / 2);
     const scale = zooms[zoomIndex] * (r.width / 204);
@@ -292,9 +303,9 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     if (pan && !pan.moved) {
       const r = big.getBoundingClientRect(), x = (e.clientX - r.left) * dpr, y = (e.clientY - r.top) * dpr, p = getPlayer();
       const target = navigationTargets().find(item => {
-        const point = projectBigTarget(item, p), label = navigationLabelBounds(bctx, point.x, point.y, item, point.distance, 11 * dpr);
-        const onLabel = x >= label.x && x <= label.x + label.w && y >= label.y && y <= label.y + label.h;
-        return onLabel || Math.hypot(point.x - x, point.y - y) <= 22 * dpr;
+        const point = projectBigTarget(item, p);
+        const label = navigationLabelBounds(bctx, point.x, point.y, item, point.distance, 11 * dpr);
+        return hitsNavigationTarget(point, label, x, y, 22 * dpr);
       });
       if (target) onNavigationTarget(target);
       else { const w = toWorld(e.clientX, e.clientY); onPick(w.x, w.z); }
